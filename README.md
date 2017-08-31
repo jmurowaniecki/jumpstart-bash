@@ -1,2 +1,3 @@
-# jumpstart-bash
-Bootstrap model for Bash scripts
+# Bash Template
+
+Bootstrap template model for Bash scripts.
