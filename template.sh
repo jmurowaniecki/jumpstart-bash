@@ -4,11 +4,19 @@
 # DESCRIPTION : Template description.
 # AUTHOR      : Your Name <your@email>
 # DATE        : 20170825
-# VERSION     : 0.0-1
+# VERSION     : 0.0.0-0
 # USAGE       : bash template.sh or ./template.sh or ..
+# REPOSITORY  : https://github.com/YOUR_USER/your_project
 #
 # -----------------------------------------------------------------------------
 #
+APP_TITLE="${Cb}λ${Cn} Template"
+APP_MAJOR=0
+APP_MINOR=0
+APP_REVISION=0
+APP_PATCH=0
+APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
+
 
 function example {
     # Explains how documentation works
@@ -47,7 +55,7 @@ function help {
     success message "${EMPTY}"
 
     $_e "
-${Cb}λ${Cn}/template.sh
+${APP_TITLE} v${APP_VERSION}
 
 Usage: ${Cb}$0${Cn} [${Cb}help${Cn}|..] ..
 
