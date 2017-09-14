@@ -6,6 +6,7 @@
 # DATE        : 20170825
 # VERSION     : 0.0-2
 # USAGE       : bash template.sh or ./template.sh or ..
+# REPOSITORY  : https://github.com/YOUR_USER/your_project
 #
 # -----------------------------------------------------------------------------
 #
