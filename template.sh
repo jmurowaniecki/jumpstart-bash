@@ -17,7 +17,6 @@ APP_MINOR=0
 APP_REVISION=0
 APP_PATCH=2
 APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
-APP_HASH=$(echo "$APP - $APP_TITLE $APP_VERSION" | md5sum | awk '{printf($1)}')
 
 function example {
     # Explains how documentation works
@@ -69,8 +68,6 @@ function multi {
 
 #
 # Try not edit below this line # ----------------------------------------------
-
-DEFAULT_ERROR_MESSAGE="Warning: ${Cb}$1${Cn} is an invalid command."
 
 function show_header {
     title="${APP_TITLE} v${APP_VERSION}"
@@ -187,18 +184,18 @@ function _x {
 
 #
 # ALIAS TO COMMON RESOURCES
-    _E='eval'
     _e='echo -e'
     __=
 
 function autocomplete {
     SHORT=on;Cn=;Cb=;Cd=;Ci=;Cr=;Cg=;Cy=;Cc=
 
-    $_e $(help $1 | awk '{print($2)}')
+    $_e "$(help "$1" | awk '{print($2)}')"
 }
 
 function _autocompleteTemplate {
-    local cur prev
+    local curr prev
+
     curr="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     APP='%APP%'
@@ -206,7 +203,7 @@ function _autocompleteTemplate {
     [[ "${prev}" == "$APP" ]] && prev=;
 
     options=$($APP autocomplete ${prev})
-    COMPREPLY=( $(compgen -W "${options}" -- ${curr}))
+    COMPREPLY=( $(compgen -W "${options}" -- "${curr}"))
     return 0
 }
 
@@ -215,12 +212,12 @@ function install {
 
     [[ $UID -eq 0 ]] &&  $_e "Configuring autocomplete.." && \
         $_e "$(declare -f _autocompleteTemplate)
-        \ncomplete -F _autocompleteTemplate %APP%" | sed -e "s/%APP%/\.\/${APP:2:-3}\.sh/" > /etc/bash_completion.d/$APP
+            \ncomplete -F _autocompleteTemplate %APP%" | sed -e "s/%APP%/\.\/${APP:2:-3}\.sh/" > /etc/bash_completion.d/$APP
 }
 
 function checkOptions {
     if [ ${#} -eq 0 ]
-    then help "$__$@"
+    then help "$__$*"
     else [ "$(functionExists "$1")" != "YES" ] \
             && help \
             && fail "Warning: ${Cb}$1${Cn} is an invalid command."
