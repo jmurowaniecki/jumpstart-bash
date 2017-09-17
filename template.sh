@@ -10,12 +10,14 @@
 #
 # -----------------------------------------------------------------------------
 #
+APP=$0
 APP_TITLE="${Cb}λ${Cn} Template"
 APP_MAJOR=0
 APP_MINOR=0
 APP_REVISION=0
 APP_PATCH=2
 APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
+APP_HASH=$(echo "$APP - $APP_TITLE $APP_VERSION" | md5sum | awk '{printf($1)}')
 
 function example {
     # Explains how documentation works
@@ -65,13 +67,17 @@ function multi {
 }
 
 
-
-
-
 #
 # Try not edit below this line # ----------------------------------------------
 
 DEFAULT_ERROR_MESSAGE="Warning: ${Cb}$1${Cn} is an invalid command."
+
+function show_header {
+    title="${APP_TITLE} v${APP_VERSION}"
+    $_e "\n\n$title\n$(printf "%${#title}s" |tr ' ' '-')\n"
+}
+
+SHORT=
 
 function help {
     # Show this content.
@@ -79,18 +85,14 @@ function help {
     filter=' '
     scope='0x99'
 
-    [[ "$1" != "" ]] && filter="$1: " && scope=${filter}
-
-    $_e "
-${APP_TITLE} v${APP_VERSION}
-
-Usage: ${Cb}$0${Cn} $1 [${Cb}help${Cn}|..] ..
+    [[ "$1"     != "" ]] && filter="$1: " && scope=${filter}
+    [[ "$SHORT" == "" ]] && show_header && $_e "Usage: ${Cb}$0${Cn} $1 [${Cb}help${Cn}|..] ..
 
 Parameters:
 "
     commands=$(grep 'function ' -A1 < "$0" | \
         awk -F-- '{print($1)}'  | \
-        sed -r 's/fu''nction (.*) \{$/\\t\\'"${Cb}"'\1\\'"${Cn}"'\\t/' | \
+        sed -r 's/fu''nction (.*) \{$/\\t\\'"${Cb}"' \1 \\'"${Cn}"'\\t/' | \
         sed -r "s/\s+#${filter}(.*)$/@ok\1/g" | \
         grep '@ok' -B1 | \
         sed -e 's/\@ok//' | \
@@ -161,7 +163,8 @@ function fail {
 }
 
 function functionExists {
-    [ "$(typeset | grep "^${1} ()" | awk '{print($1)}')" != "" ] && $_e YES
+    name="^${1} ()"
+    [[ $(typeset | grep "$name" | awk '{print($1)}') != '' ]] && $_e YES
 }
 
 #
@@ -184,9 +187,36 @@ function _x {
 
 #
 # ALIAS TO COMMON RESOURCES
+    _E='eval'
     _e='echo -e'
     __=
 
+function autocomplete {
+    SHORT=on;Cn=;Cb=;Cd=;Ci=;Cr=;Cg=;Cy=;Cc=
+
+    $_e $(help $1 | awk '{print($2)}')
+}
+
+function _autocompleteTemplate {
+    local cur prev
+    curr="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    APP='%APP%'
+
+    [[ "${prev}" == "$APP" ]] && prev=;
+
+    options=$($APP autocomplete ${prev})
+    COMPREPLY=( $(compgen -W "${options}" -- ${curr}))
+    return 0
+}
+
+function install {
+    # Installs autocomplete features (need sudo).
+
+    [[ $UID -eq 0 ]] &&  $_e "Configuring autocomplete.." && \
+        $_e "$(declare -f _autocompleteTemplate)
+        \ncomplete -F _autocompleteTemplate %APP%" | sed -e "s/%APP%/\.\/${APP:2:-3}\.sh/" > /etc/bash_completion.d/$APP
+}
 
 function checkOptions {
     if [ ${#} -eq 0 ]
