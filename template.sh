@@ -165,6 +165,46 @@ function functionExists {
 }
 
 #
+#
+function autocomplete {
+    SHORT=on;Cn=;Cb=;Cd=;Ci=;Cr=;Cg=;Cy=;Cc=
+    $_e "$(help "$1" | awk '{print($2)}')"
+}
+
+function install {
+    # Installs autocomplete features (need sudo).
+
+    function _autocompleteTemplate {
+        local curr prev
+
+        curr="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+        APP='%APP%'
+
+        [[ "${prev}" == "$APP" ]] && prev=;
+
+        options=$($APP autocomplete ${prev})
+        COMPREPLY=( $(compgen -W "${options}" -- "${curr}"))
+        return 0
+    }
+
+    [[ $UID -eq 0 ]] &&  $_e "Configuring autocomplete.." && \
+        $_e "$(declare -f _autocompleteTemplate)
+            \ncomplete -F _autocompleteTemplate %APP%" | sed -e "s/%APP%/\.\/${APP:2:-3}\.sh/" > /etc/bash_completion.d/$APP
+}
+
+function checkOptions {
+    if [ ${#} -eq 0 ]
+    then help "$__$*"
+    else [ "$(functionExists "$1")" != "YES" ] \
+            && help \
+            && fail "Warning: ${Cb}$1${Cn} is an invalid command."
+        [[ "${__}" == "" ]] && __="$1"
+        "$@"
+    fi
+}
+
+#
 # DECORATION
 COLORS=$(tput colors 2> /dev/null)
 if [ $? = 0 ] && [ "${COLORS}" -gt 2 ]; then
@@ -186,45 +226,6 @@ function _x {
 # ALIAS TO COMMON RESOURCES
     _e='echo -e'
     __=
-
-function autocomplete {
-    SHORT=on;Cn=;Cb=;Cd=;Ci=;Cr=;Cg=;Cy=;Cc=
-
-    $_e "$(help "$1" | awk '{print($2)}')"
-}
-
-function _autocompleteTemplate {
-    local curr prev
-
-    curr="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
-    APP='%APP%'
-
-    [[ "${prev}" == "$APP" ]] && prev=;
-
-    options=$($APP autocomplete ${prev})
-    COMPREPLY=( $(compgen -W "${options}" -- "${curr}"))
-    return 0
-}
-
-function install {
-    # Installs autocomplete features (need sudo).
-
-    [[ $UID -eq 0 ]] &&  $_e "Configuring autocomplete.." && \
-        $_e "$(declare -f _autocompleteTemplate)
-            \ncomplete -F _autocompleteTemplate %APP%" | sed -e "s/%APP%/\.\/${APP:2:-3}\.sh/" > /etc/bash_completion.d/$APP
-}
-
-function checkOptions {
-    if [ ${#} -eq 0 ]
-    then help "$__$*"
-    else [ "$(functionExists "$1")" != "YES" ] \
-            && help \
-            && fail "Warning: ${Cb}$1${Cn} is an invalid command."
-        [[ "${__}" == "" ]] && __="$1"
-        "$@"
-    fi
-}
 
 #
 # FUNCTION CALLER
