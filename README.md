@@ -265,7 +265,7 @@ fi
 
 ## TODO
 
-- Implementar `traps`;
+- Implementar `traps` - http://redsymbol.net/articles/bash-exit-traps/;
 - Traduções;
 - Tutorial de uso;
 - Automatizar atualização dos valores de versão e assinatura de distribuição;
