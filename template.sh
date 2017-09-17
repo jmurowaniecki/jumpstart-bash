@@ -4,7 +4,7 @@
 # DESCRIPTION : Template description.
 # AUTHOR      : Your Name <your@email>
 # DATE        : 20170825
-# VERSION     : 0.0.0-0
+# VERSION     : 0.0-2
 # USAGE       : bash template.sh or ./template.sh or ..
 # REPOSITORY  : https://github.com/YOUR_USER/your_project
 #
@@ -14,9 +14,8 @@ APP_TITLE="${Cb}λ${Cn} Template"
 APP_MAJOR=0
 APP_MINOR=0
 APP_REVISION=0
-APP_PATCH=0
+APP_PATCH=2
 APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
-
 
 function example {
     # Explains how documentation works
@@ -40,6 +39,31 @@ function colors {
     ${Cb}Cy${Cn}     ${Cy}Yellow${Cn}"
 }
 
+function multi {
+    # Try multi options (with helper)
+
+    function one {
+        #multi: Function one must return success
+        success message "This returns success"
+
+        [[ "$FAILURE" != "" ]] && fail "Fail message"
+
+        success
+    }
+
+    function two {
+        #multi: Function two must return success
+        success message "This must return fail"
+
+        fail "That will fail"
+
+        success
+    }
+
+    # Ensure multilevel
+    checkOptions "$@"
+}
+
 
 
 
@@ -51,22 +75,26 @@ DEFAULT_ERROR_MESSAGE="Warning: ${Cb}$1${Cn} is an invalid command."
 
 function help {
     # Show this content.
-
     success message "${EMPTY}"
+    filter=' '
+    scope='0x99'
+
+    [[ "$1" != "" ]] && filter="$1: " && scope=${filter}
 
     $_e "
 ${APP_TITLE} v${APP_VERSION}
 
-Usage: ${Cb}$0${Cn} [${Cb}help${Cn}|..] ..
+Usage: ${Cb}$0${Cn} $1 [${Cb}help${Cn}|..] ..
 
 Parameters:
 "
-    commands="$(grep 'function ' -A1 < "$0" | \
+    commands=$(grep 'function ' -A1 < "$0" | \
         awk -F-- '{print($1)}'  | \
         sed -r 's/fu''nction (.*) \{$/\\t\\'"${Cb}"'\1\\'"${Cn}"'\\t/' | \
-        sed -r 's/\s+# (.*)$/@ok\1/' | \
+        sed -r "s/\s+#${filter}(.*)$/@ok\1/g" | \
         grep '@ok' -B1 | \
-        sed -e 's/\@ok//')"
+        sed -e 's/\@ok//' | \
+        sed -e "s/${scope}//" )
     $_e "${commands}" | tr '\n' '\ ' | sed -e 's/--/\n/g'
 
     success || fail 'Something terrible happens.'
@@ -133,7 +161,7 @@ function fail {
 }
 
 function functionExists {
-    [ "$(typeset | grep "${1} ()" | awk '{print($1)}')" != "" ] && $_e YES
+    [ "$(typeset | grep "^${1} ()" | awk '{print($1)}')" != "" ] && $_e YES
 }
 
 #
@@ -157,14 +185,20 @@ function _x {
 #
 # ALIAS TO COMMON RESOURCES
     _e='echo -e'
+    __=
+
+
+function checkOptions {
+    if [ ${#} -eq 0 ]
+    then help "$__$@"
+    else [ "$(functionExists "$1")" != "YES" ] \
+            && help \
+            && fail "Warning: ${Cb}$1${Cn} is an invalid command."
+        [[ "${__}" == "" ]] && __="$1"
+        "$@"
+    fi
+}
 
 #
 # FUNCTION CALLER
-if [ ${#} -eq 0 ]
-then help
-else [ "$(functionExists "$1")" != "YES" ] \
-        && help \
-        && fail "${DEFAULT_ERROR_MESSAGE}"
-
-    "$@"
-fi
+checkOptions "$@"
