@@ -1,0 +1,18 @@
+{
+    "name": "php-developer/jumpstart-bash",
+    "description": "Bash script template.",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "John Murowaniecki",
+            "email": "jmurowaniecki@gmail.com"
+        }
+    ],
+    "scripts": {
+        "post-create-project-cmd": [
+            "target=$(pwd | sed -E 's/.*\\/(.*)$/\\1/') && mv template.sh \"$target\" && chmod +x \"$target\""
+        ]
+    },
+    "require": {}
+}
