@@ -11,12 +11,14 @@
 # -----------------------------------------------------------------------------
 #
 APP=$0
+APP_PATH=$(pwd)
 APP_TITLE="${Cb}λ${Cn} Template"
 APP_MAJOR=0
 APP_MINOR=0
-APP_REVISION=0
-APP_PATCH=2
+APP_REVISION=1
+APP_PATCH=0
 APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
+APP_RECIPES=YES
 
 function example {
     # Explains how documentation works
@@ -65,7 +67,6 @@ function multi {
     checkOptions "$@"
 }
 
-
 #
 # Try not edit below this line # ----------------------------------------------
 
@@ -87,14 +88,33 @@ function help {
 
 Parameters:
 "
-    commands=$(grep 'function ' -A1 < "$0" | \
+    commands=$(grep 'function ' -A1 < "${APP_PATH}/${APP}" | \
         awk -F-- '{print($1)}'  | \
-        sed -r 's/fu''nction (.*) \{$/\\t\\'"${Cb}"' \1 \\'"${Cn}"'\\t/' | \
+        sed -r 's/fu''nction (.*) \{$/\1/' | \
         sed -r "s/\s+#${filter}(.*)$/@ok\1/g" | \
         grep '@ok' -B1 | \
         sed -e 's/\@ok//' | \
         sed -e "s/${scope}//" )
-    $_e "${commands}" | tr '\n' '\ ' | sed -e 's/--/\n/g'
+    commands=$($_e "${commands}" | tr '\n' '\ ' | sed -e 's/--/\n/g')
+
+    function parseThis {
+        method=$1;shift
+        $_e "${space}${Cb}${method}${Cn}$(fill "$method")${space}$($_e "$@")"
+    }
+
+    n=1
+    max_size=0
+    space=$(fill four)
+
+    while read -r line
+    do  size=$(strlen "$($_e "$line" | awk '{print($1)}')")
+        [[ $size -gt $max_size ]] && max_size=$size
+    done <<< "$commands"
+
+    # shellcheck disable=SC2086
+    while read -r line
+    do parseThis $line
+    done <<< "$commands"
 
     success || fail 'Something terrible happens.'
 }
@@ -114,8 +134,8 @@ function confirmYesNo {
     else
         m=$1
     fi
-     option="($Y/$N)? "
-     $_e -n "$m ${option}"
+    option="($Y/$N)? "
+    $_e -n "$m ${option}"
     read -n 1 m -r;c=${m^}
     case $c in
         Y|N) n=$c;;
@@ -159,6 +179,18 @@ function fail {
     $_e "$@" && exit 1
 }
 
+function strlen {
+    $_e ${#1}
+}
+
+function str_repeat {
+    printf '%*s' "$1" | tr ' ' "$2"
+}
+
+function fill {
+    str_repeat $((max_size - ${#1})) ' '
+}
+
 function functionExists {
     name="^${1} ()"
     [[ $(typeset | grep "$name" | awk '{print($1)}') != '' ]] && $_e YES
@@ -168,7 +200,7 @@ function functionExists {
 #
 function autocomplete {
     SHORT=on;Cn=;Cb=;Cd=;Ci=;Cr=;Cg=;Cy=;Cc=
-    $_e "$(help "$1" | awk '{print($2)}')"
+    $_e "$(help "$1" | awk '{print($1)}')"
 }
 
 function install {
@@ -194,6 +226,7 @@ function install {
 }
 
 function checkOptions {
+    [[ "$APP_RECIPES" == "YES" ]] && search_for_recipes
     if [ ${#} -eq 0 ]
     then help "$__$*"
     else [ "$(functionExists "$1")" != "YES" ] \
@@ -218,8 +251,28 @@ if [ $? = 0 ] && [ "${COLORS}" -gt 2 ]; then
     Cc="\e[34m" # blue
 fi
 
-function _x {
-    $_e "\t${Cb}$1${Cn}\t$*"
+function search_for_recipes {
+    APP=$($_e "/$APP" | sed -r 's/.*\/(.*)$/\1/')
+    if [   -e ".$APP/recipes.bash" ]
+    then src  ".$APP/recipes.bash"
+        APP_RECIPES="$(pwd)/.$APP/recipes.bash"
+        return
+    fi
+    case "$1" in
+        wow)  R=so;;
+        so)   R=many;;
+        many) R=levels;;
+        levels) return;;
+        *) R=wow;;
+    esac
+    cd ..
+    search_for_recipes $R
+}
+
+function src {
+
+    # shellcheck disable=SC1090
+    source "$1"
 }
 
 #
