@@ -4,7 +4,7 @@
 # DESCRIPTION : Template description.
 # AUTHOR      : Your Name <your@email>
 # DATE        : 20170825
-# VERSION     : 0.0-2
+# VERSION     : 0.1-0
 # USAGE       : bash template.sh or ./template.sh or ..
 # REPOSITORY  : https://github.com/YOUR_USER/your_project
 #
@@ -14,8 +14,8 @@ APP=$0
 APP_PATH=$(pwd)
 APP_TITLE="${Cb}λ${Cn} Template"
 APP_MAJOR=0
-APP_MINOR=0
-APP_REVISION=1
+APP_MINOR=1
+APP_REVISION=0
 APP_PATCH=0
 APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
 APP_RECIPES=YES
@@ -205,8 +205,9 @@ function autocomplete {
 
 function install {
     # Installs autocomplete features (need sudo).
+    success message "Autocomplete instalado com sucesso. Reinicialize o terminal para que as mudanças façam efeito."
 
-    function _autocompleteTemplate {
+    function _autocomplete_Template {
         local curr prev
 
         curr="${COMP_WORDS[COMP_CWORD]}"
@@ -220,9 +221,16 @@ function install {
         return 0
     }
 
+    clean=$($_e "$APP" | sed -r 's/([a-z0-9A-Z]*).*$/\1/')
+    target="/etc/bash_completion.d/$APP"
+
     [[ $UID -eq 0 ]] &&  $_e "Configuring autocomplete.." && \
-        $_e "$(declare -f _autocompleteTemplate)
-            \ncomplete -F _autocompleteTemplate %APP%" | sed -e "s/%APP%/\.\/${APP:2:-3}\.sh/" > /etc/bash_completion.d/$APP
+        $_e "$(declare -f _autocomplete_Template)
+            \ncomplete -F _autocomplete_Template %APP%" | \
+                sed -e "s/%APP%/\.\/${APP}/" | \
+                sed -e "s/_Template/${clean}/" > "$target" && \
+                source "$target" && \
+                success
 }
 
 function checkOptions {
@@ -256,13 +264,18 @@ function search_for_recipes {
     if [   -e ".$APP/recipes.bash" ]
     then src  ".$APP/recipes.bash"
         APP_RECIPES="$(pwd)/.$APP/recipes.bash"
+        cd ${APP_PATH}
         return
     fi
     case "$1" in
         wow)  R=so;;
         so)   R=many;;
         many) R=levels;;
-        levels) return;;
+        levels)
+            cd ${APP_PATH}
+            APP_RECIPES=NO
+            return
+            ;;
         *) R=wow;;
     esac
     cd ..
