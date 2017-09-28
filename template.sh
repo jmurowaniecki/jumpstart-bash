@@ -4,7 +4,7 @@
 # DESCRIPTION : Template description.
 # AUTHOR      : Your Name <your@email>
 # DATE        : 20170825
-# VERSION     : 0.1-0
+# VERSION     : 0.1.0-0
 # USAGE       : bash template.sh or ./template.sh or ..
 # REPOSITORY  : https://github.com/YOUR_USER/your_project
 #
