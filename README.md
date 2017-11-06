@@ -1,22 +1,23 @@
-# Bash Template
+# Jumpstart Bash Template
+[![StyleCI](https://styleci.io/repos/102001979/shield?branch=master)](https://styleci.io/repos/102001979) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8c024327353741839413296650fe883f)](https://www.codacy.com/app/jmurowaniecki/jumpstart-bash?utm_source=github.com&utm_medium=referral&utm_content=jmurowaniecki/jumpstart-bash&utm_campaign=Badge_Grade)
 
-Modelo padrão para scripts Bash.
+All the cool kids are using this resource to start their bootstrap scripts. The last one to fork gets her rotten eggs :sunglasses:
 
+## Structure
 
-## Entendendo a estrutura
+#### #! _(aka: Shebang)_
 
-### #! / Shebang
-
-Declaração [padrão do interpretador do script](https://en.wikipedia.org/wiki/Shebang_(Unix)).
+[Standart declaration of the program loader](https://en.wikipedia.org/wiki/Shebang_(Unix) are commonly the first line of the executable file that specifies the interpreter and environmental parameters.
 
 ```bash
 #!/usr/bin/env bash
 ```
+> _Means that our script runs over Bash._
 
 
-### Cabeçalho / documentação
+#### Document heading
 
-Deve indicar o nome do script, sua descrição/aplicação, seu(s) autor(es), informações de uso, onde/como obter mais informações, link para o repositório, etc.
+Describes script name, description, usage, authors and how/where to get more information (repository links, and more).
 
 ```bash
 #
@@ -24,42 +25,46 @@ Deve indicar o nome do script, sua descrição/aplicação, seu(s) autor(es), in
 # DESCRIPTION : Template description.
 # AUTHOR      : Your Name <your@email>
 # DATE        : 20170825
-# VERSION     : 0.0-1
+# VERSION     : 7.6.2-33
 # USAGE       : bash template.sh or ./template.sh or ..
 # REPOSITORY  : https://github.com/YOUR_USER/your_project
 #
 ```
 
 
-### Variáveis de identificação e versão
+#### Versioning
 
-Utilize as variáveis de identificação e versão para rastrear funcionalidades e bugs de forma eficiente mantendo esses valores atualizados com as tags do seu versionador favorito [da forma que melhor lhe convir](http://semver.org/).
+Use the ID and version variables to efficiently and efficiently track features and bugs by keeping those values up to date with your favorite versioner's tags [in the way that suits you best](http://semver.org/).
 
 ```bash
 APP_TITLE="${Cb}λ${Cn} Template"
+
 APP_MAJOR=0
 APP_MINOR=0
 APP_REVISION=0
 APP_PATCH=0
+#
+#   AVOID change above the safety line.
+#
+# --------------------------------------- SAFETY LINE -------------
 APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
 ```
 
 
-### Área de desenvolvimento :rocket:
+#### Development area _(fun zone)_
 
-As funções abaixo exemplificam onde devem ficar e como devem ser documentadas as funções para que sejam exibidas adequadamente como opções pelo helper do script.
+The functions below exemplify where to stay and how to document the functions so that they are properly displayed as options by the script helper.
 
 ```bash
 function example {
     # Explains how documentation works
-    #
 
     $_e "I don't know what to do"
 }
 
 function colors {
     # Show color/style variable table
-    #
+
     $_e "Color/style variables:
 
     ${Cb}Cn${Cn}     ${Cn}Normal/reset${Cn}
@@ -73,23 +78,24 @@ function colors {
 }
 ```
 
-> Note que a variável `$_e` é utilizada como substituta ao comando `echo -e` como único propósito estético.
+> Note that the `$_e` variable is used as a substitute for the `echo -e` command as a sole aesthetic purpose.
 
 
-### Funções auxiliares
+#### Auxiliary functions
 
-Define mensagem padrão de erro caso o parâmetro informado não seja um comando válido.
+Sets the default error message if the parameter entered is not a valid command.
 ```bash
 #
-# Try not edit below this line # ----------------------------------------------
-
+#   AVOID change above the safety line.
+#
+# --------------------------------------- SAFETY LINE -------------
 DEFAULT_ERROR_MESSAGE="Warning: ${Cb}$1${Cn} is an invalid command."
 ```
 
 
-#### Interpretador de ajuda para parâmetros
+##### Lazy helper
 
-Exibe ajuda dos parâmetros suportados pela aplicação.
+Displays help for supported application parameters.
 
 ```bash
 function help {
@@ -115,10 +121,10 @@ Parameters:
     success || fail 'Something terrible happens.'
 }
 ```
-> Para que seus métodos tenham suas descrições exibidas corretamente inclua uma linha de comentário resumindo seu funcionamento logo abaixo da definição da função - como sugerido nos exemplos acima.
+> To have your method descriptions displayed correctly, include a comment line summarizing their operation just below the function definition - as suggested in the examples above.
 
 
-#### Capturar entrada / confirmações
+##### Prompting Yes/No
 
 ```bash
 #
@@ -148,7 +154,7 @@ function confirmYesNo {
 ```
 
 
-#### Mensagem de sucesso e falha
+##### Success and failure messages
 
 ```bash
 # Hold a success message.
@@ -186,62 +192,11 @@ function fail {
 }
 ```
 
-> A função `fail` exibe mensagem de falha finalizando o script.
+> The use of `fail` shows a message quitting script.
 
 
-#### Verifica se determinada função existe no escopo da aplicação
 
-```bash
-function functionExists {
-    [ "$(typeset | grep "${1} ()" | awk '{print($1)}')" != "" ] && $_e YES
-}
-```
-
-
-#### Declaração de Cores
-
-As cores são armazenadas em variáveis, após verificar se o terminal no qual este script é executado suporta seu uso.
-
-```bash
-#
-# DECORATION
-COLORS=$(tput colors 2> /dev/null)
-if [ $? = 0 ] && [ "${COLORS}" -gt 2 ]; then
-    Cn="\e[0m"  # normal/reset
-    Cb="\e[1m"  # bold
-    Cd="\e[2m"  # dark/gray
-    Ci="\e[3m"  # italic
-    Cr="\e[31m" # red
-    Cg="\e[32m" # green
-    Cy="\e[33m" # yellow
-    Cc="\e[34m" # blue
-fi
-```
-
-> Caso o terminal/emulador não suporte a utilização de cores, as variáveis não serão declaradas.
-
-#### Eu queria muito lembrar do motivo de ter feito isso
-
-Sério, não faço ideia.
-
-```bash
-function _x {
-    $_e "\t${Cb}$1${Cn}\t$*"
-}
-```
-
-> Mas mesmo assim vou deixar - vai que seja útil pra alguém (ou no futuro).
-
-
-#### Apelidos para comandos e métodos
-
-```bash
-#
-# ALIAS TO COMMON RESOURCES
-    _e='echo -e'
-```
-
-#### Verifica se o parâmetro informado é uma função válida
+##### Check if given parameter are a valid function inside the actual function scope
 
 ```bash
 #
@@ -258,18 +213,17 @@ fi
 
 ---
 
-## Dicas
+## Tips
 
-- Garanta a qualidade do seu código seguindo padrões de codificação, [validando o mesmo utilizando ferramentas adequadas](https://github.com/koalaman/shellcheck) e [adotando](https://google.github.io/styleguide/shell.xml) [boas](https://github.com/bahamas10/bash-style-guide) [práticas](https://devmanual.gentoo.org/tools-reference/bash/) ([bônus](https://github.com/bahamas10/bash-style-guide));
+- Ensure code quality following coding standarts, [validating them with proper tools](https://github.com/koalaman/shellcheck) e [using](https://google.github.io/styleguide/shell.xml) [good](https://github.com/bahamas10/bash-style-guide) [practices](https://devmanual.gentoo.org/tools-reference/bash/) ([plus](https://github.com/bahamas10/bash-style-guide));
 
 
 ## TODO
 
-- Implementar `traps` - http://redsymbol.net/articles/bash-exit-traps/;
-- Traduções;
-- Tutorial de uso;
-- Automatizar atualização dos valores de versão e assinatura de distribuição;
-- Melhorar o `confirmYesNo`;
+- `traps` - http://redsymbol.net/articles/bash-exit-traps/;
+- Tutorials;
+- Autobuild increments version signature;
+- Improve function `confirmYesNo`;
 
 ---
 

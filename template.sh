@@ -7,29 +7,27 @@
 # VERSION     : 0.1.0-0
 # USAGE       : bash template.sh or ./template.sh or ..
 # REPOSITORY  : https://github.com/YOUR_USER/your_project
-#
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 #
 APP=$0
 APP_PATH=$(pwd)
 APP_TITLE="${Cb}λ${Cn} Template"
+APP_RECIPES=YES
 APP_MAJOR=0
 APP_MINOR=1
 APP_REVISION=0
-APP_PATCH=0
-APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
-APP_RECIPES=YES
+APP_PATCH=1
+
 
 function example {
     # Explains how documentation works
-    #
 
     $_e "I don't know what to do"
 }
 
 function colors {
     # Show color/style variable table
-    #
+
     $_e "Color/style variables:
 
     ${Cb}Cn${Cn}     ${Cn}Normal/reset${Cn}
@@ -50,7 +48,6 @@ function multi {
         success message "This returns success"
 
         [[ "$FAILURE" != "" ]] && fail "Fail message"
-
         success
     }
 
@@ -67,54 +64,91 @@ function multi {
     checkOptions "$@"
 }
 
+
+
 #
-# Try not edit below this line # ----------------------------------------------
+#       AVOID change above the safety line.
+#
+# -------------------------------------------------- SAFETY LINE -------------
+
+APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
 
 function show_header {
-    title="${APP_TITLE} v${APP_VERSION}"
-    $_e "\n\n$title\n$(printf "%${#title}s" |tr ' ' '-')\n"
+    title="${Cb}${APP_TITLE}${Cn} v${APP_VERSION}"
+    $_e "\n\n$title\n$(printf "%${#title}s" | tr ' ' '-')\n"
 }
 
 SHORT=
 
+declare -a commands
+commands=()
+
 function help {
     # Show this content.
     success message "${EMPTY}"
-    filter=' '
-    scope='0x99'
+    filter='\ '
 
-    [[ "$1"     != "" ]] && filter="$1: " && scope=${filter}
+    [[ "$1"     != "" ]] && filter="$1: "
     [[ "$SHORT" == "" ]] && show_header && $_e "Usage: ${Cb}$0${Cn} $1 [${Cb}help${Cn}|..] ..
 
 Parameters:
 "
-    commands=$(grep 'function ' -A1 < "${APP_PATH}/${APP}" | \
-        awk -F-- '{print($1)}'  | \
-        sed -r 's/fu''nction (.*) \{$/\1/' | \
-        sed -r "s/\s+#${filter}(.*)$/@ok\1/g" | \
-        grep '@ok' -B1 | \
-        sed -e 's/\@ok//' | \
-        sed -e "s/${scope}//" )
-    commands=$($_e "${commands}" | tr '\n' '\ ' | sed -e 's/--/\n/g')
+    scope=$filter
 
-    function parseThis {
-        method=$1;shift
-        $_e "${space}${Cb}${method}${Cn}$(fill "$method")${space}$($_e "$@")"
+    function parse_help {
+        content="$1"
+
+        [ ! -e "$content" ] && content=$(which "$APP")
+        [ ! -d "$content" ] || return 0
+
+        list=$(grep 'function ' -A1 < "$content" | \
+            awk -F-- '{print($1)}'  | \
+            $_sed 's/fu''nction (.*) \{$/\1/' | \
+            $_sed "s/.+#${filter}(.*)$/@ok\1/g" | \
+            grep '@ok' -B1 | \
+            $_sed 's/\@ok//' | \
+            $_sed "s/^${scope}//" | tr '\n' '\ ' | $_sed 's/-- /\\n/g')
+
+        OIFS="$IFS"
+        IFS=$'\n' temporary=(${list//\\n/$'\n'})
+        IFS="$OIFS"
+
+        for command in "${temporary[@]}"
+        do  commands[${#commands[@]}]="$command"
+        done
     }
 
-    n=1
+    function fill {
+        size=${#1}
+        str_repeat $((max_size - size)) ' '
+    }
+
+    function parseThis {
+        [[ "$1" == "" ]] && return
+        method="$1";shift
+        $_e "${space}${Cb}${method}${Cn}$(fill $method)${space}${@}"
+    }
+
+    parse_help
+
+    if [ "$APP_RECIPES" != "NO" ] && [ "$APP_RECIPES" != "YES" ] && [[ -e "$APP_RECIPES" ]]
+    then for recipe in "$APP_RECIPES"/*
+        do parse_help "$recipe"
+        done
+    fi
+
     max_size=0
     space=$(fill four)
 
-    while read -r line
-    do  size=$(strlen "$($_e "$line" | awk '{print($1)}')")
-        [[ $size -gt $max_size ]] && max_size=$size
-    done <<< "$commands"
+    for command in "${commands[@]}"
+    do  size=$(strlen "$($_e "$command" | awk '{print($1)}')")
+    [[ $size -gt $max_size ]] && max_size=$size
+    done
 
-    # shellcheck disable=SC2086
-    while read -r line
+    # shellcheck disable=SC2_086
+    for line in "${commands[@]}"
     do parseThis $line
-    done <<< "$commands"
+    done
 
     success || fail 'Something terrible happens.'
 }
@@ -134,13 +168,15 @@ function confirmYesNo {
     else
         m=$1
     fi
+    eval "$d=\\${Cb}$d\\${Cn}"
     option="($Y/$N)? "
     $_e -n "$m ${option}"
-    read -n 1 m -r;c=${m^}
+    read -n 1 -r m; c=${m^}
     case $c in
         Y|N) n=$c;;
           *) n=$d;;
     esac
+    $_e
     export confirmYesNo=$n;
 }
 
@@ -155,7 +191,7 @@ function confirmYesNo {
 #       success
 #
 #  will execute command1, command2, command3 and print: "all commands executed"
-#  when success.
+#  when  success.
 function success {
     if [ "$1"  == "message" ]
     then   success_message="$2"; return 0; fi
@@ -187,10 +223,6 @@ function str_repeat {
     printf '%*s' "$1" | tr ' ' "$2"
 }
 
-function fill {
-    str_repeat $((max_size - ${#1})) ' '
-}
-
 function functionExists {
     name="^${1} ()"
     [[ $(typeset | grep "$name" | awk '{print($1)}') != '' ]] && $_e YES
@@ -203,38 +235,56 @@ function autocomplete {
     $_e "$(help "$1" | awk '{print($1)}')"
 }
 
-function install {
-    # Installs autocomplete features (need sudo).
-    success message "Autocomplete instalado com sucesso. Reinicialize o terminal para que as mudanças façam efeito."
+function config {
+    # Configure application.
 
-    function _autocomplete_Template {
-        local curr prev
+    function install {
+        #config: Installs autocomplete features (need sudo).
+        success message "Autocomplete instalado com sucesso.
 
-        curr="${COMP_WORDS[COMP_CWORD]}"
-        prev="${COMP_WORDS[COMP_CWORD-1]}"
-        APP='%APP%'
+        Reinicialize o terminal para que as mudanças façam efeito.
 
-        [[ "${prev}" == "$APP" ]] && prev=;
+        Você pode utilizar o comando \`${Cb}reset${Cn}\` para realizar esse processo."
 
-        options=$($APP autocomplete ${prev})
-        COMPREPLY=( $(compgen -W "${options}" -- "${curr}"))
-        return 0
+        function _autocomplete_Template {
+            local curr prev
+
+            curr="${COMP_WORDS[COMP_CWORD]}"
+            prev="${COMP_WORDS[COMP_CWORD-1]}"
+            APP='%APP%'
+
+            [[ "${prev}" ==   "$APP" ]] && prev=;
+            [[ "${prev}" == "./$APP" ]] && prev=;
+
+            options=$($APP autocomplete ${prev})
+            COMPREPLY=( $(compgen -W "${options}" -- "${curr}"))
+            return 0
+        }
+
+        clean=$($_e "$APP" | $_sed 's/([a-z0-9A-Z]*).*$/\1/')
+        target="/etc/bash_completion.d/$APP"
+
+        cp "$APP" "/bin/$APP"
+        chmod +x  "/bin/$APP"
+        $_e "$(declare -f _autocomplete_Template)\n\n"  | \
+            sed -e "s/%APP%/${APP}/" | \
+            sed -e "s/_Template/${clean}/"  > "$target"
+
+        for each in ".\/${APP}" "${APP}"
+        do [[ $UID -eq 0 ]] &&  $_e "Configuring autocomplete.." && \
+            $_e "complete -F _autocomplete_Template %APP%" | \
+                sed -e "s/%APP%/${each}/" | \
+                sed -e "s/_Template/${clean}/" >> "$target" && \
+                src "$target" && \
+                success
+        done
     }
 
-    clean=$($_e "$APP" | sed -r 's/([a-z0-9A-Z]*).*$/\1/')
-    target="/etc/bash_completion.d/$APP"
-
-    [[ $UID -eq 0 ]] &&  $_e "Configuring autocomplete.." && \
-        $_e "$(declare -f _autocomplete_Template)
-            \ncomplete -F _autocomplete_Template %APP%" | \
-                sed -e "s/%APP%/\.\/${APP}/" | \
-                sed -e "s/_Template/${clean}/" > "$target" && \
-                source "$target" && \
-                success
+    checkOptions "$@"
 }
 
 function checkOptions {
-    [[ "$APP_RECIPES" == "YES" ]] && search_for_recipes
+    [[ "$APP_RECIPES" != "NO" ]] && search_for_recipes
     if [ ${#} -eq 0 ]
     then help "$__$*"
     else [ "$(functionExists "$1")" != "YES" ] \
@@ -249,37 +299,47 @@ function checkOptions {
 # DECORATION
 COLORS=$(tput colors 2> /dev/null)
 if [ $? = 0 ] && [ "${COLORS}" -gt 2 ]; then
-    Cn="\e[0m"  # normal/reset
-    Cb="\e[1m"  # bold
-    Cd="\e[2m"  # dark/gray
-    Ci="\e[3m"  # italic
-    Cr="\e[31m" # red
-    Cg="\e[32m" # green
-    Cy="\e[33m" # yellow
-    Cc="\e[34m" # blue
+    # shellcheck disable=SC2034
+    C="\033"
+    Cn="$C[0m"  # normal/reset
+    Cb="$C[1m"  # bold
+    # shellcheck disable=SC2034
+    Cd="$C[2m"  # dark/gray
+    # shellcheck disable=SC2034
+    Ci="$C[3m"  # italic
+    # shellcheck disable=SC2034
+    Cr="$C[31m" # red
+    # shellcheck disable=SC2034
+    Cg="$C[32m" # green
+    # shellcheck disable=SC2034
+    Cy="$C[33m" # yellow
+    # shellcheck disable=SC2034
+    Cc="$C[34m" # blue
 fi
 
 function search_for_recipes {
-    APP=$($_e "/$APP" | sed -r 's/.*\/(.*)$/\1/')
-    if [   -e ".$APP/recipes.bash" ]
-    then src  ".$APP/recipes.bash"
-        APP_RECIPES="$(pwd)/.$APP/recipes.bash"
-        cd ${APP_PATH}
+    RCP="$(pwd)/.$($_e "/$APP" | $_sed 's/.*\/(.*)$/\1/')"
+    if [ -e $RCP/* ]
+    then      APP_RECIPES="$RCP"
+        for recipe in "$APP_RECIPES"/*
+        do src "$recipe"
+        done
+        cd "${APP_PATH}" || exit 1
         return
     fi
     case "$1" in
-        wow)  R=so;;
-        so)   R=many;;
-        many) R=levels;;
+        wow)  i=so;;
+        so)   i=many;;
+        many) i=levels;;
         levels)
-            cd ${APP_PATH}
+            cd "${APP_PATH}" || exit 1
             APP_RECIPES=NO
             return
             ;;
-        *) R=wow;;
+        *) i=wow;;
     esac
     cd ..
-    search_for_recipes $R
+    search_for_recipes "$i"
 }
 
 function src {
@@ -290,6 +350,8 @@ function src {
 
 #
 # ALIAS TO COMMON RESOURCES
+    max_size=
+    _sed='sed -E'
     _e='echo -e'
     __=
 
