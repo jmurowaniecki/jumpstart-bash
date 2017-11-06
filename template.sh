@@ -126,7 +126,7 @@ Parameters:
     function parseThis {
         [[ "$1" == "" ]] && return
         method="$1";shift
-        $_e "${space}${Cb}${method}${Cn}$(fill $method)${space}${@}"
+        $_e "${space}${Cb}${method}${Cn}$(fill "$method")${space}${*}"
     }
 
     parse_help
@@ -145,9 +145,10 @@ Parameters:
     [[ $size -gt $max_size ]] && max_size=$size
     done
 
-    # shellcheck disable=SC2_086
     for line in "${commands[@]}"
-    do parseThis $line
+    do
+        # shellcheck disable=SC2086
+        parseThis $line
     done
 
     success || fail 'Something terrible happens.'
@@ -298,6 +299,7 @@ function checkOptions {
 #
 # DECORATION
 COLORS=$(tput colors 2> /dev/null)
+# shellcheck disable=SC2181
 if [ $? = 0 ] && [ "${COLORS}" -gt 2 ]; then
     # shellcheck disable=SC2034
     C="\033"
@@ -319,14 +321,14 @@ fi
 
 function search_for_recipes {
     RCP="$(pwd)/.$($_e "/$APP" | $_sed 's/.*\/(.*)$/\1/')"
-    if [ -e $RCP/* ]
-    then      APP_RECIPES="$RCP"
-        for recipe in "$APP_RECIPES"/*
-        do src "$recipe"
-        done
+    for recipes in "$RCP"/*
+    do  if  [ -e "$recipes" ]
+        then src "$recipes"
+            APP_RECIPES="$RCP"
+        fi
         cd "${APP_PATH}" || exit 1
         return
-    fi
+    done
     case "$1" in
         wow)  i=so;;
         so)   i=many;;
