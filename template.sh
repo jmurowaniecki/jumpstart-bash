@@ -4,12 +4,12 @@
 # DESCRIPTION : Template description.
 # AUTHOR      : Your Name <your@email>
 # DATE        : 20170825
-# VERSION     : 0.1.0-0
+# VERSION     : 0.1.0-1
 # USAGE       : bash template.sh or ./template.sh or ..
 # REPOSITORY  : https://github.com/YOUR_USER/your_project
 # ----------------------------------------------------------------------------
 #
-APP=$0
+APP=${0/[\$\.\/]*\//}
 APP_PATH=$(pwd)
 APP_TITLE="${Cb}λ${Cn} Template"
 APP_RECIPES=YES
@@ -267,17 +267,17 @@ function config {
 
         cp "$APP" "/bin/$APP"
         chmod +x  "/bin/$APP"
-        $_e "$(declare -f _autocomplete_Template)\n\n"  | \
+        $_e "$(declare -f _autocomplete_Template)\n\n" | \
             sed -e "s/%APP%/${APP}/" | \
             sed -e "s/_Template/${clean}/"  > "$target"
 
-        for each in ".\/${APP}" "${APP}"
-        do [[ $UID -eq 0 ]] &&  $_e "Configuring autocomplete.." && \
+        for each in ${APP}
+        do [[ $UID -eq 0 ]] && $_e "Configuring autocomplete.." && \
             $_e "complete -F _autocomplete_Template %APP%" | \
                 sed -e "s/%APP%/${each}/" | \
                 sed -e "s/_Template/${clean}/" >> "$target" && \
-                src "$target" && \
-                success
+            src "$target" && \
+            success
         done
     }
 
@@ -286,6 +286,7 @@ function config {
 
 function checkOptions {
     [[ "$APP_RECIPES" != "NO" ]] && search_for_recipes
+
     if [ ${#} -eq 0 ]
     then help "$__$*"
     else [ "$(functionExists "$1")" != "YES" ] \
@@ -325,9 +326,8 @@ function search_for_recipes {
     do  if  [ -e "$recipes" ]
         then src "$recipes"
             APP_RECIPES="$RCP"
+            return
         fi
-        cd "${APP_PATH}" || exit 1
-        return
     done
     case "$1" in
         wow)  i=so;;
