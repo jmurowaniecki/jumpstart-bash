@@ -262,6 +262,8 @@ function config {
             return 0
         }
 
+        [[ $UID -eq 0 ]] || fail "${Cb}Atenção${Cn}: é necessário executar esse procedimento com privilégios de administrador."
+
         clean=$($_e "$APP" | $_sed 's/([a-z0-9A-Z]*).*$/\1/')
         target="/etc/bash_completion.d/$APP"
 
