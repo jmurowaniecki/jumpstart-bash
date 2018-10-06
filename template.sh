@@ -324,13 +324,17 @@ fi
 
 function search_for_recipes {
     RCP="$(pwd)/.$($_e "/$APP" | $_sed 's/.*\/(.*)$/\1/')"
+    FSO=()
     for recipes in "$RCP"/*
     do  if  [ -e "$recipes" ]
         then src "$recipes"
+            FSO+=($recipes)
             APP_RECIPES="$RCP"
-            return
         fi
     done
+
+    [[ ${#FSO[@]} -gt 0 ]] && return
+
     case "$1" in
         wow)  i=so;;
         so)   i=many;;
