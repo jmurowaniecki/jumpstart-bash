@@ -98,10 +98,10 @@ Parameters:
     function parse_help {
         content="$1"
 
-        [ ! -e "$content" ] && content=$(which "$APP")
+        [ ! -e "$content" ] && content=$(which "$APP" | which "./$APP")
         [ ! -d "$content" ] || return 0
 
-        list=$(grep 'function ' -A1 < "$content" | \
+        list=$(grep 'fun''ction ' -A1 < "$content" | \
             awk -F-- '{print($1)}'  | \
             $_sed 's/fu''nction (.*) \{$/\1/' | \
             $_sed "s/.+#${filter}(.*)$/@ok\1/g" | \
@@ -133,7 +133,7 @@ Parameters:
 
     if [ "$APP_RECIPES" != "NO" ] && [ "$APP_RECIPES" != "YES" ] && [[ -e "$APP_RECIPES" ]]
     then for recipe in "$APP_RECIPES"/*
-        do parse_help "$recipe"
+        do  parse_help "$recipe"
         done
     fi
 
@@ -150,6 +150,19 @@ Parameters:
         # shellcheck disable=SC2086
         parseThis $line
     done
+
+    # check for custom_help
+    more_info=$(custom_help 2> /dev/null)
+
+    if [[ -n "$more_info" ]]
+    then
+        oldCb=$Cb
+        oldCn=$Cn
+        Cn=$oldCn$Cd
+        Cb=$oldCn; $_e "\nExtended help:${Cn}\n\n$more_info"
+        Cn=$oldCn
+        Cb=$oldCb
+    fi
 
     success || fail 'Something terrible happens.'
 }
@@ -325,10 +338,10 @@ fi
 function search_for_recipes {
     RCP="$(pwd)/.$($_e "/$APP" | $_sed 's/.*\/(.*)$/\1/')"
     FSO=()
-    for recipes in "$RCP"/*
-    do  if  [ -e "$recipes" ]
-        then src "$recipes"
-            FSO+=($recipes)
+    for recipe in "$RCP"/*
+    do  if  [ -e "$recipe" ]
+        then src "$recipe"
+            FSO+=($recipe)
             APP_RECIPES="$RCP"
         fi
     done
