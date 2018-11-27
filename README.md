@@ -1,7 +1,23 @@
-# Jumpstart Bash Template
+# Jump Start Bash Template
 [![StyleCI](https://styleci.io/repos/102001979/shield?branch=master)](https://styleci.io/repos/102001979) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8c024327353741839413296650fe883f)](https://www.codacy.com/app/jmurowaniecki/jumpstart-bash?utm_source=github.com&utm_medium=referral&utm_content=jmurowaniecki/jumpstart-bash&utm_campaign=Badge_Grade)
 
-All the cool kids are using this resource to start their bootstrap scripts. The last one to fork gets her rotten eggs :sunglasses:
+**Jump Start** was concepted to be an easy and lightweight boilerplate for your tools using modularity to manage readability and producing a self-deployment solution. Although you can use `jumpstart` to handle self-contained tools, it can be used to manage multiple recipes in a _global_ environment.
+
+Aiming to solve structural gaps allowing to perform autocompletion and generate documentation based on source code annotations **Jump Start** intent to be your weapon of choice to start from small sized projects to complex solutions.
+
+## Getting start
+
+### Instalation
+
+### Compatibility check
+
+### Hands on
+
+#### Creating a small and self-contained application
+
+#### Creating a complex and self-deployable solution
+
+### Solving problems
 
 ## Structure
 
@@ -220,15 +236,17 @@ fi
 
 ## TODO
 
-- `traps` - http://redsymbol.net/articles/bash-exit-traps/;
+- Implement `traps` - http://redsymbol.net/articles/bash-exit-traps/;
 - Tutorials;
 - Autobuild increments version signature;
 - Improve function `confirmYesNo`;
+- Modularize README into a wiki or something like;
+- GIT versioning integration;
 
 ---
 
 
-# License and terms of use
+# License, warranties and terms of use
 
 The author is not liable for misuse and/or damage caused by free use and/or distribution of this tool.
 
@@ -236,6 +254,8 @@ The author is not liable for misuse and/or damage caused by free use and/or dist
 
 ### <div style="text-align:center">Copyright © 2017 λ::lambda, CompilouIT, John Murowaniecki.</div>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+_The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software._
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
