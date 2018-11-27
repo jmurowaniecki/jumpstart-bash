@@ -7,17 +7,21 @@
 # VERSION     : 0.1.0-1
 # USAGE       : bash template.sh or ./template.sh or ..
 # REPOSITORY  : https://github.com/YOUR_USER/your_project
-# ----------------------------------------------------------------------------
-#
+# -------------------------------------------------------------------
+
+# General/global application variables
 APP=${0/[\$\.\/]*\//}
 APP_PATH=$(pwd)
 APP_TITLE="${Cb}λ${Cn} Template"
 APP_RECIPES=YES
-APP_MAJOR=0
-APP_MINOR=1
-APP_REVISION=0
-APP_PATCH=1
 
+# Semantic versioning
+APP_VERSION_MAJOR=0
+APP_VERSION_MINOR=1
+APP_VERSION_BUILD=0
+APP_VERSION_REVISION=1
+APP_VERSION_CODENAME=silly
+APP_VERSION_NICKNAME=package
 
 function example {
     # Explains how documentation works
@@ -69,13 +73,51 @@ function multi {
 #
 #       AVOID change above the safety line.
 #
-# -------------------------------------------------- SAFETY LINE -------------
-
-APP_VERSION="${APP_MAJOR}.${APP_MINOR}.${APP_REVISION}-${APP_PATCH}"
+# -------------------------------------------------- SAFETY LINE ----
 
 function show_header {
-    title="${Cb}${APP_TITLE}${Cn} v${APP_VERSION}"
-    $_e "\n\n$title\n$(printf "%${#title}s" | tr ' ' '-')\n"
+    title="${Cb}${APP_TITLE}${Cn} v$(version print)"
+    printable=$($_e -E "${title}" | sed 's/\\[\e0-9]*\[[0-9;]*\m//g')
+
+    $_e "\n\n$title\n$(printf "%${#printable}s" | tr ' ' '-')\n"
+}
+
+function version {
+    # Semantic versioning tool.
+
+    function print {
+        #version: Prints semantic version.
+        TEXT="${APP_VERSION_MAJOR}"
+        NICK="${APP_VERSION_CODENAME}"
+
+        for O in \
+        $APP_VERSION_MINOR \
+        $APP_VERSION_BUILD
+        do  [ ! -z "${O}" ] && \
+            TEXT+=".${O}"
+        done
+
+        [ ! -z "${APP_VERSION_REVISION}" ] && TEXT+="-${APP_VERSION_REVISION}"
+        [ ! -z "${APP_VERSION_NICKNAME}" ] && NICK+=" ${APP_VERSION_NICKNAME}"
+
+        [ ! -z "${NICK}" ] && TEXT+=" '${NICK}'"
+
+        $_e "${TEXT}"
+    }
+
+    function check {
+        #version: Check if current version matches last (actual) GIT tag.
+        require git
+        exit 0
+    }
+
+    checkOptions "$@"
+}
+
+function require {
+    for required in $*
+    do [ -z $(which "${required}") ] && fail "${Cb}${required}${Cn} required."
+    done
 }
 
 SHORT=
