@@ -76,10 +76,10 @@ function multi {
 # -------------------------------------------------- SAFETY LINE ----
 
 function show_header {
-    title="${Cb}${APP_TITLE}${Cn} v$(version print)"
-    printable=$($_e -E "${title}" | sed 's/\\[\e0-9]*\[[0-9;]*\m//g')
+    TITLE="${Cb}${APP_TITLE}${Cn} v$(version print)"
+    LABEL=$($_e -E "${TITLE}" | sed 's/\\[\e0-9]*\[[0-9;]*\m//g')
 
-    $_e "\n\n$title\n$(printf "%${#printable}s" | tr ' ' '-')\n"
+    $_e "\n\n$TITLE\n$(printf "%${#LABEL}s" | tr ' ' '-')\n"
 }
 
 function version {
@@ -87,6 +87,7 @@ function version {
 
     function print {
         #version: Prints semantic version.
+
         TEXT="${APP_VERSION_MAJOR}"
         NICK="${APP_VERSION_CODENAME}"
 
@@ -100,7 +101,7 @@ function version {
         [ ! -z "${APP_VERSION_REVISION}" ] && TEXT+="-${APP_VERSION_REVISION}"
         [ ! -z "${APP_VERSION_NICKNAME}" ] && NICK+=" ${APP_VERSION_NICKNAME}"
 
-        [ ! -z "${NICK}" ] && TEXT+=" '${NICK}'"
+        there '--no-nick' in $* || ([ ! -z "${NICK}" ] && TEXT+=" '${NICK}'")
 
         $_e "${TEXT}"
     }
@@ -108,10 +109,27 @@ function version {
     function check {
         #version: Check if current version matches last (actual) GIT tag.
         require git
-        exit 0
+
+        VERSION=$(version print --no-nick)
+        GIT_TAG=$(git tag -l)
+
+        success message "Não existe nenhuma TAG para a versão ${Cb}${VERSION}${Cn}."
+
+        there $VERSION in $GIT_TAG && fail "A versão ${Cb}${VERSION}${Cn} já possui tag versionada."
+
+        success
     }
 
     checkOptions "$@"
+}
+
+function there {
+    SOMETHING=$1; shift; shift
+    COLLECTION=$*
+
+    [[ "${COLLECTION[@]}" =~ "${SOMETHING}" ]] && return 0
+
+    return 1
 }
 
 function require {
