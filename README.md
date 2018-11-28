@@ -23,7 +23,7 @@ Aiming to solve structural gaps allowing to perform autocompletion and generate 
 
 #### #! _(aka: Shebang)_
 
-[Standart declaration of the program loader](https://en.wikipedia.org/wiki/Shebang_(Unix) are commonly the first line of the executable file that specifies the interpreter and environmental parameters.
+[Standart declaration of the program loader](https://en.wikipedia.org/wiki/Shebang_(Unix)) are commonly the first line of the executable file that specifies the interpreter and environmental parameters.
 
 ```bash
 #!/usr/bin/env bash
