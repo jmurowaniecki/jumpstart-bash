@@ -13,7 +13,9 @@
 APP=${0/[\$\.\/]*\//}
 APP_PATH=$(pwd)
 APP_TITLE="${Cb}λ${Cn} Template"
-APP_RECIPES=YES
+APP_RECIPES=${RECIPES:-YES}
+
+DEBUG=${DEBUG:-false}
 
 # Semantic versioning
 APP_VERSION_MAJOR=0
@@ -101,21 +103,25 @@ function version {
         [ ! -z "${APP_VERSION_REVISION}" ] && TEXT+="-${APP_VERSION_REVISION}"
         [ ! -z "${APP_VERSION_NICKNAME}" ] && NICK+=" ${APP_VERSION_NICKNAME}"
 
-        there '--no-nick' in $* || ([ ! -z "${NICK}" ] && TEXT+=" '${NICK}'")
+        if ! there '--no-nick' in "$@" && \
+            [[ ! -z "${NICK}" ]]; then
+            TEXT+=" '${NICK}'"
+        fi
 
         $_e "${TEXT}"
     }
 
     function check {
         #version: Check if current version matches last (actual) GIT tag.
-        require git
+        require git bash4
 
         VERSION=$(version print --no-nick)
         GIT_TAG=$(git tag -l)
 
         success message "Não existe nenhuma TAG para a versão ${Cb}${VERSION}${Cn}."
 
-        there $VERSION in $GIT_TAG && fail "A versão ${Cb}${VERSION}${Cn} já possui tag versionada."
+        there "${VERSION}" in "${GIT_TAG}" && \
+            fail "A versão ${Cb}${VERSION}${Cn} já possui tag versionada."
 
         success
     }
@@ -123,18 +129,41 @@ function version {
     checkOptions "$@"
 }
 
+function bash4 {
+    [[ "${BASH_VERSINFO[0]}" -lt 4 ]] && return 1
+    return 0
+}
+
 function there {
     SOMETHING=$1; shift; shift
     COLLECTION=$*
 
-    [[ "${COLLECTION[@]}" =~ "${SOMETHING}" ]] && return 0
+    $DEBUG "there something:$SOMETHING collection:(${COLLECTION})"
+
+    [[ -n "$($_e "${COLLECTION[@]}" | grep "\\$SOMETHING")" ]] && return 0
 
     return 1
 }
 
 function require {
-    for required in $*
-    do [ -z $(which "${required}") ] && fail "${Cb}${required}${Cn} required."
+    for required in "$@"
+    do  binary='' \
+        method='' \
+        return=true
+
+        binary=$(which "${required}")
+
+        # Verificar a possibilidade de validação com `command -v` sem perda do
+        # propósito da validação do retorno.
+        if [ ! -n "$binary" ]; then
+            method=$(set|grep "${required} ()")
+            return=$(${required} && ($_e true))
+        fi
+
+        $DEBUG "require b:${binary} m:${method} r:${return}"
+
+        [[ ! -n "${binary}" ]] && [[ "${return}" != 'true' ]] && \
+            fail "${Cb}${required}${Cn} required as a binary or defined function."
     done
 }
 
@@ -191,9 +220,11 @@ Parameters:
 
     parse_help
 
-    if [ "$APP_RECIPES" != "NO" ] && [ "$APP_RECIPES" != "YES" ] && [[ -e "$APP_RECIPES" ]]
-    then for recipe in "$APP_RECIPES"/*
-        do  parse_help "$recipe"
+    if  [[ "NO"  != "${APP_RECIPES}" ]] && \
+        [[ "YES" != "${APP_RECIPES}" ]] && \
+        [[    -e    "${APP_RECIPES}" ]]; then
+        for info in "${APP_RECIPES}"/*
+        do parse_help "${info}"
         done
     fi
 
