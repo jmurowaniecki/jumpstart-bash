@@ -94,8 +94,8 @@ function version {
         NICK="${APP_VERSION_CODENAME}"
 
         for O in \
-        $APP_VERSION_MINOR \
-        $APP_VERSION_BUILD
+            $APP_VERSION_MINOR \
+            $APP_VERSION_BUILD
         do  [ ! -z "${O}" ] && \
             TEXT+=".${O}"
         done
@@ -130,19 +130,18 @@ function version {
 }
 
 function bash4 {
-    [[ "${BASH_VERSINFO[0]}" -lt 4 ]] && return 1
-    return 0
+    [[ ! "${BASH_VERSINFO[0]}" -lt 4 ]]
 }
 
 function there {
-    SOMETHING=$1; shift; shift
-    COLLECTION=$*
+    SOMETHING=
+    COLLECTION=
 
-    $DEBUG "there something:$SOMETHING collection:(${COLLECTION})"
+    for argument in SOMETHING IN COLLECTION
+    do export $argument="$1"; shift
+    done
 
-    [[ -n "$($_e "${COLLECTION[@]}" | grep "\\$SOMETHING")" ]] && return 0
-
-    return 1
+    $_e "${COLLECTION[@]}" | grep -q "\\$SOMETHING"
 }
 
 function require {
@@ -162,7 +161,8 @@ function require {
 
         $DEBUG "require b:${binary} m:${method} r:${return}"
 
-        [[ ! -n "${binary}" ]] && [[ "${return}" != 'true' ]] && \
+        [[   !   -n  "${binary}" ]] && \
+        [[ 'true' != "${return}" ]] && \
             fail "${Cb}${required}${Cn} required as a binary or defined function."
     done
 }
@@ -203,7 +203,7 @@ Parameters:
         IFS="$OIFS"
 
         for command in "${temporary[@]}"
-        do  commands[${#commands[@]}]="$command"
+        do  commands[  "${#commands[@]}"  ]="$command"
         done
     }
 
