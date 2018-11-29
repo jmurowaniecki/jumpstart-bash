@@ -8,7 +8,7 @@
 # USAGE       : bash template.sh or ./template.sh or ..
 # REPOSITORY  : https://github.com/YOUR_USER/your_project
 # -------------------------------------------------------------------
-
+#
 # General/global application variables
 APP=${0/[\$\.\/]*\//}
 APP_PATH=$(pwd)
@@ -113,7 +113,7 @@ function version {
 
     function check {
         #version: Check if current version matches last (actual) GIT tag.
-        require git bash4
+        require versioning
 
         VERSION=$(version print --no-nick)
         GIT_TAG=$(git tag -l)
@@ -126,11 +126,22 @@ function version {
         success
     }
 
+    function init {
+        #version: Start semantic versioning.
+        require versioning
+    }
+
     checkOptions "$@"
 }
 
 function bash4 {
     [[ ! "${BASH_VERSINFO[0]}" -lt 4 ]]
+}
+
+function versioning {
+    require git
+
+    git status > /dev/null 2>&1
 }
 
 function there {
@@ -166,6 +177,18 @@ function require {
             fail "${Cb}${required}${Cn} required as a binary or defined function."
     done
 }
+
+#
+# A tip for those who want some `try .. catch` we strongly suggest: DON`T,
+# but if you really we're here to help.
+#
+# [1] https://www.biostars.org/p/300840/
+# [2] https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs/25515370#25515370
+#
+function yell { $_e "$0: $*" >&2; }
+function die  { yell "$*"; exit 111; }
+function try  { "$@" || die "${Cr}>${Cn} Error: $*"; }
+
 
 SHORT=
 
@@ -261,6 +284,8 @@ Parameters:
 #
 # HELPERS
 #
+# TODO:
+#   Utilizar códigos de retorno (0, 1, ..)
          confirmYesNo=
 function confirmYesNo {
     Y=y; N=n
