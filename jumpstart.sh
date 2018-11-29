@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 #
-# TITLE       : Template title.
-# DESCRIPTION : Template description.
-# AUTHOR      : Your Name <your@email>
+# TITLE       : Jump Start Bash Boilerplate.
+# DESCRIPTION : .
+# AUTHOR      : John Murowaniecki <john@compilou.com.br>
 # DATE        : 20170825
-# VERSION     : 0.1.0-1
-# USAGE       : bash template.sh or ./template.sh or ..
-# REPOSITORY  : https://github.com/YOUR_USER/your_project
+# VERSION     : 0.1.0-1 silly package
+# USAGE       : bash jumpstart.sh or ./jumpstart.sh or ..
+# REPOSITORY  : https://github.com/jmurowaniecki/jumpstart
 # -------------------------------------------------------------------
 #
 # General/global application variables
 APP=${0/[\$\.\/]*\//}
-APP_PATH=$(pwd)
-APP_TITLE="${Cb}λ${Cn} Template"
+APP_PATH=$(pwd)                     # Although can be $(dirname "$0")
+APP_TITLE="${Cb}λ${Cn} Jumpstart"
 APP_RECIPES=${RECIPES:-YES}
 
 DEBUG=${DEBUG:-false}
@@ -129,6 +129,100 @@ function version {
     function init {
         #version: Start semantic versioning.
         require versioning
+
+        # check if there are some versioning data;
+        # check if there aren't inconsistency;
+        # check git history and propose versioning (check for existent tags);
+
+        # check for release file
+
+        declare -a OPTIONS
+        OPTIONS=(target major minor build revision codename nickname)
+        OPTION=0
+
+        IS_DIRECTORY=
+        VERSION_LETTER=v
+        OVERIDE_VERSION=
+
+        TARGET_PROJECT='./'      # targeted project folder or script
+        TARGET_VERSION='VERSION' # targeted VERSION file
+
+        GENERATE_TAG=YES
+        GENERATE_RELEASE=YES
+
+        if [[ $# -gt 0 ]]
+        then    for     option   in "$@"
+            do  case "${option}" in
+                    --version-file=*   ) TARGET_VERSION="${option/--version-file=/}" ;;
+                    --no-v|--no-letter*) VERSION_LETTER=        ;;
+                    --no-tag           ) GENERATE_TAG=false     ;;
+                    --no-release       ) GENERATE_RELEASE=false ;;
+                    *)
+                    NEED=true
+
+                    while $NEED
+                    do  ARG=${OPTIONS[$OPTION]}
+                        OPTION=$((OPTION + 1))
+
+                        case  $ARG in
+                            target)       TARGET_PROJECT="${option}"
+                            if [[ ! -d "${TARGET_PROJECT}" ]]
+                            then
+                                TARGET_PROJECT='./'
+                                NEED=true
+                                continue
+                            fi
+                            ;;
+
+                            major)    TARGET_MAJOR="${option}"
+                            if $_e "${TARGET_MAJOR}" | grep -q '.'
+                            then declare -a \
+                                SEMANTIC_VERSIONING_STRUCTURE
+                                SEMANTIC_VERSIONING_STRUCTURE=(TARGET_MAJOR TARGET_MINOR TARGET_BUILD TARGET_REVISION)
+
+                                POS=1
+                                TARGET_TMP=$(sed -E 's/[v\.\:]*([0-9]*)[\.|\-]([0-9]*)[\.|\-|rc|a|b]*([0-9]*)[\.|\-|b|a|r|c]*([0-9]*)/\1 \2 \3 \4/' <<< "${TARGET_MAJOR}")
+
+                                for SEM in "${SEMANTIC_VERSIONING_STRUCTURE[@]}"
+                                do  VAL=$($_e "${TARGET_TMP}" | awk '{print($'${POS}')}')
+                                    POS=$((POS + 1))
+                                    export "${SEM}"="${VAL/-/}"
+                                done
+                                OPTION=$((OPTION + 3))
+                                OVERIDE_VERSION=true
+                            fi
+                            ;;
+                            minor   ) TARGET_MINOR="${option}";;
+                            build   ) TARGET_BUILD="${option}";;
+                            revision) TARGET_REVISION="${option}";;
+                            codename) TARGET_CODENAME="${option}";;
+                            nickname) TARGET_NICKNAME="${option}";;
+                        esac
+                        NEED=false
+                    done
+                esac
+                $_e "$option ${ARG}"
+            done
+        fi
+
+        TARGET_MAJOR=$(cat "$APP" | grep -e '# VERSION.*:' | head -n 1)
+
+        declare -a \
+        SEMANTIC_VERSIONING_STRUCTURE
+        SEMANTIC_VERSIONING_STRUCTURE=(TARGET_MAJOR TARGET_MINOR TARGET_BUILD TARGET_REVISION TARGET_CODENAME TARGET_NICKNAME)
+
+        POS=1
+        TARGET_TMP=$(sed -E 's/[v|\ |\.|\:|\#A-Z]*([0-9]*)[\.|\-]([0-9]*)[\.|\-|rc|a|b]*([0-9]*)[\.|\-|b|a|r|c]*([0-9]*)/\1 \2 \3 \4/' <<< "${TARGET_MAJOR/.*\:/}")
+
+        for SEM in "${SEMANTIC_VERSIONING_STRUCTURE[@]}"
+        do  VAL=$($_e "${TARGET_TMP}" | awk '{print($'${POS}')}')
+            POS=$((POS + 1))
+            export "${SEM}"="${VAL/-/}"
+        done
+
+        $_e "checking for $0 where $* turns to
+        git tag '${VERSION_LETTER}${TARGET_MAJOR}.${TARGET_MINOR}.${TARGET_BUILD}-${TARGET_REVISION}' -m '${TARGET_CODENAME} ${TARGET_NICKNAME}'
+"
     }
 
     checkOptions "$@"
