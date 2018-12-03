@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # TITLE       : Jump Start Bash Boilerplate.
-# DESCRIPTION : .
+# DESCRIPTION : An easy and lightweight boilerplate for your tools.
 # AUTHOR      : John Murowaniecki <john@compilou.com.br>
 # DATE        : 20170825
 # VERSION     : 0.1.0-1 silly package
@@ -25,13 +25,13 @@ APP_VERSION_REVISION=1
 APP_VERSION_CODENAME=silly
 APP_VERSION_NICKNAME=package
 
-function example {
+example() {
     # Explains how documentation works
 
     $_e "I don't know what to do"
 }
 
-function colors {
+colors() {
     # Show color/style variable table
 
     $_e "Color/style variables:
@@ -46,10 +46,10 @@ function colors {
     ${Cb}Cy${Cn}     ${Cy}Yellow${Cn}"
 }
 
-function multi {
+multi() {
     # Try multi options (with helper)
 
-    function one {
+    one() {
         #multi: Function one must return success
         success message "This returns success"
 
@@ -57,7 +57,7 @@ function multi {
         success
     }
 
-    function two {
+    two() {
         #multi: Function two must return success
         success message "This must return fail"
 
@@ -77,17 +77,17 @@ function multi {
 #
 # -------------------------------------------------- SAFETY LINE ----
 
-function show_header {
+show_header() {
     TITLE="${Cb}${APP_TITLE}${Cn} v$(version print)"
     LABEL=$($_e -E "${TITLE}" | sed 's/\\[\e0-9]*\[[0-9;]*\m//g')
 
     $_e "\n\n$TITLE\n$(printf "%${#LABEL}s" | tr ' ' '-')\n"
 }
 
-function version {
+version() {
     # Semantic versioning tool.
 
-    function print {
+    print() {
         #version: Prints semantic version.
 
         TEXT="${APP_VERSION_MAJOR}"
@@ -111,7 +111,7 @@ function version {
         $_e "${TEXT}"
     }
 
-    function check {
+    check() {
         #version: Check if current version matches last (actual) GIT tag.
         require versioning
 
@@ -126,7 +126,7 @@ function version {
         success
     }
 
-    function init {
+    init() {
         #version: Start semantic versioning.
         require versioning
 
@@ -220,6 +220,13 @@ function version {
             export "${SEM}"="${VAL/-/}"
         done
 
+        LAST_TAG=$(git tag --list --sort=tag|head -n 1)
+        $_e "## ${VERSION_LETTER}${TARGET_MAJOR}.${TARGET_MINOR}.${TARGET_BUILD}-${TARGET_REVISION} ${TARGET_CODENAME} ${TARGET_NICKNAME}
+Histórico de correções desde a versão **${LAST_TAG}** até a presente data ($(date +'%Y-%m-%d')):
+$(git log --since="${LAST_TAG}" --oneline --pretty=format:'-   **%h**: %s')
+
+" >> HISTORY.md
+
         $_e "checking for $0 where $* turns to
         git tag '${VERSION_LETTER}${TARGET_MAJOR}.${TARGET_MINOR}.${TARGET_BUILD}-${TARGET_REVISION}' -m '${TARGET_CODENAME} ${TARGET_NICKNAME}'
 "
@@ -228,17 +235,17 @@ function version {
     checkOptions "$@"
 }
 
-function bash4 {
+bash4() {
     [[ ! "${BASH_VERSINFO[0]}" -lt 4 ]]
 }
 
-function versioning {
+versioning() {
     require git
 
     git status > /dev/null 2>&1
 }
 
-function there {
+there() {
     SOMETHING=
     COLLECTION=
 
@@ -246,10 +253,12 @@ function there {
     do export $argument="$1"; shift
     done
 
-    $_e "${COLLECTION[@]}" | grep -q "\\$SOMETHING"
+    [[ "${COLLECTION}" =~ "${SOMETHING}" ]] && return 0
+
+    return 1
 }
 
-function require {
+require() {
     for required in "$@"
     do  binary='' \
         method='' \
@@ -279,9 +288,9 @@ function require {
 # [1] https://www.biostars.org/p/300840/
 # [2] https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs/25515370#25515370
 #
-function yell { $_e "$0: $*" >&2; }
-function die  { yell "$*"; exit 111; }
-function try  { "$@" || die "${Cr}>${Cn} Error: $*"; }
+yell() { $_e "$0: $*" >&2; }
+die()  { yell "$*"; exit 111; }
+try()  { "$@" || die "${Cr}>${Cn} Error: $*"; }
 
 
 SHORT=
@@ -289,7 +298,7 @@ SHORT=
 declare -a commands
 commands=()
 
-function help {
+help() {
     # Show this content.
     success message "${EMPTY}"
     filter='\ '
@@ -301,15 +310,15 @@ Parameters:
 "
     scope=$filter
 
-    function parse_help {
+    parse_help() {
         content="$1"
 
         [ ! -e "$content" ] && content=$(which "$APP" | which "./$APP")
         [ ! -d "$content" ] || return 0
 
-        list=$(grep 'fun''ction ' -A1 < "$content" | \
+        list=$(grep '[funct''ion|]*(.*)\(''\) {' -A1 < "$content" | \
             awk -F-- '{print($1)}'  | \
-            $_sed 's/fu''nction (.*) \{$/\1/' | \
+            $_sed 's/(.*)\(\) \{$/\1/' | \
             $_sed "s/.+#${filter}(.*)$/@ok\1/g" | \
             grep '@ok' -B1 | \
             $_sed 's/\@ok//' | \
@@ -324,12 +333,12 @@ Parameters:
         done
     }
 
-    function fill {
+    fill() {
         size=${#1}
         str_repeat $((max_size - size)) ' '
     }
 
-    function parseThis {
+    parseThis() {
         [[ "$1" == "" ]] && return
         method="$1";shift
         $_e "${space}${Cb}${method}${Cn}$(fill "$method")${space}${*}"
@@ -337,11 +346,17 @@ Parameters:
 
     parse_help
 
+    #declare -a processed
+    processed=
+
     if  [[ "NO"  != "${APP_RECIPES}" ]] && \
         [[ "YES" != "${APP_RECIPES}" ]] && \
-        [[    -e    "${APP_RECIPES}" ]]; then
-        for info in "${APP_RECIPES}"/*
-        do parse_help "${info}"
+        [[  0 -lt "${#FSO[@]}" ]]; then
+        for O  in  "${FSO[@]}"
+        do $_e "${processed[@]}" | grep "${O}" > /dev/null && continue
+
+                parse_help "${O}"
+                processed+="${O}\n"
         done
     fi
 
@@ -380,8 +395,8 @@ Parameters:
 #
 # TODO:
 #   Utilizar códigos de retorno (0, 1, ..)
-         confirmYesNo=
-function confirmYesNo {
+confirmYesNo=
+confirmYesNo() {
     Y=y; N=n
     if [ $# -gt 1 ]
     then case ${1^^} in
@@ -416,7 +431,7 @@ function confirmYesNo {
 #
 #  will execute command1, command2, command3 and print: "all commands executed"
 #  when  success.
-function success {
+success() {
     if [ "$1"  == "message" ]
     then   success_message="$2"; return 0; fi
     $_e "${success_message}"
@@ -435,34 +450,34 @@ function success {
 #
 #  will execute command1, command2, command3 and print: "command 3 fail"
 #  when command 3 fails.
-function fail {
+fail() {
     $_e "$@" && exit 1
 }
 
-function strlen {
+strlen() {
     $_e ${#1}
 }
 
-function str_repeat {
+str_repeat() {
     printf '%*s' "$1" | tr ' ' "$2"
 }
 
-function functionExists {
+functionExists() {
     name="^${1} ()"
-    [[ $(typeset | grep "$name" | awk '{print($1)}') != '' ]] && $_e YES
+    [[ $(typeset | grep "${name}" | awk '{print($1)}') != '' ]] && $_e YES
 }
 
 #
 #
-function autocomplete {
-    SHORT=on;Cn=;Cb=;Cd=;Ci=;Cr=;Cg=;Cy=;Cc=
+autocomplete() {
+    SHORT=on;Cn= ;Cb= ;Cd= ;Ci= ;Cr= ;Cg= ;Cy= ;Cc=
     $_e "$(help "$1" | awk '{print($1)}')"
 }
 
-function config {
+config() {
     # Configure application.
 
-    function install {
+    install() {
         #config: Installs autocomplete features (need sudo).
         success message "Autocomplete instalado com sucesso.
 
@@ -470,7 +485,7 @@ function config {
 
         Você pode utilizar o comando \`${Cb}reset${Cn}\` para realizar esse processo."
 
-        function _autocomplete_Template {
+        _autocomplete_Template() {
             local curr prev
 
             curr="${COMP_WORDS[COMP_CWORD]}"
@@ -509,10 +524,10 @@ function config {
     checkOptions "$@"
 }
 
-function checkOptions {
+checkOptions() {
     [[ "$APP_RECIPES" != "NO" ]] && search_for_recipes
 
-    if [ ${#} -eq 0 ]
+    if [ "${#}" -eq 0 ]
     then help "$__$*"
     else [ "$(functionExists "$1")" != "YES" ] \
             && help \
@@ -545,18 +560,24 @@ if [ $? = 0 ] && [ "${COLORS}" -gt 2 ]; then
     Cc="$C[34m" # blue
 fi
 
-function search_for_recipes {
-    RCP="$(pwd)/.$($_e "/$APP" | $_sed 's/.*\/(.*)$/\1/')"
-    FSO=()
-    for recipe in "$RCP"/*
-    do  if  [ -e "$recipe" ]
-        then src "$recipe"
-            FSO+=($recipe)
-            APP_RECIPES="$RCP"
+FSO=()
+
+
+search_for_recipes() {
+    [[  -d  "$1" ]] && \
+        RCP="$1"    || \
+        RCP="$(pwd)/.$($_e "/${APP}" | $_sed 's/.*\/(.*)$/\1/')"
+
+    for recipe in "${RCP}"/*
+    do  if   [ -d "${recipe}" ];then search_for_recipes "${recipe}"
+        elif [ -e "${recipe}" ]
+        then src  "${recipe}"
+            there "${recipe}" in "${FSO[@]}" && continue
+            FSO+=( ${recipe} )
         fi
     done
 
-    [[ ${#FSO[@]} -gt 0 ]] && return
+    [[ ${#FSO[@]} -gt 0 ]] && APP_RECIPES=LOADED && return
 
     case "$1" in
         wow)  i=so;;
@@ -573,7 +594,7 @@ function search_for_recipes {
     search_for_recipes "$i"
 }
 
-function src {
+src() {
 
     # shellcheck disable=SC1090
     source "$1"

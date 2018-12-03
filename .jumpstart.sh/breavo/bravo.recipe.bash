@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-recipes() {
-    # Main recipes (root folder)
+bravo() {
+    # Prototipe recipe subfolder.
 
     recipe1() {
-        #recipes: User defined recipe
+        #bravo: Brvvo defined recipe
         success message "this is an user defined recipe"
 
         fail "That will fail :)"
@@ -13,7 +13,7 @@ recipes() {
     }
 
     recipe2() {
-        #recipes: User defined recipe2
+        #bravo: Brvvo defined recipe2
         success message "this is an user defined recipe"
 
         fail "That will fail :)"

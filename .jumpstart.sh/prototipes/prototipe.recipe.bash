@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-recipes() {
-    # Main recipes (root folder)
+proto() {
+    # Prototipe recipe subfolder.
 
     recipe1() {
-        #recipes: User defined recipe
+        #proto: Prototipe defined recipe
         success message "this is an user defined recipe"
 
         fail "That will fail :)"
@@ -13,7 +13,7 @@ recipes() {
     }
 
     recipe2() {
-        #recipes: User defined recipe2
+        #proto: Prototipe defined recipe2
         success message "this is an user defined recipe"
 
         fail "That will fail :)"
