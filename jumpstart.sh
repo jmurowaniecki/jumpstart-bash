@@ -316,7 +316,7 @@ Parameters:
         [ ! -e "$content" ] && content=$(which "$APP" | which "./$APP")
         [ ! -d "$content" ] || return 0
 
-        list=$(grep '[funct''ion|]*(.*)\(''\) {' -A1 < "$content" | \
+        list=$(grep '[funct''ion|]*(.*)\(''\) {' -A1 < "${content:-/dev/null}" | \
             awk -F-- '{print($1)}'  | \
             $_sed 's/(.*)\(\) \{$/\1/' | \
             $_sed "s/.+#${filter}(.*)$/@ok\1/g" | \
