@@ -9,21 +9,19 @@
 # REPOSITORY  : https://github.com/jmurowaniecki/jumpstart
 # -------------------------------------------------------------------
 #
-# General/global application variables
-APP=${0/[\$\.\/]*\//}
-APP_PATH=$(pwd)                     # Although can be $(dirname "$0")
+# <GENERAL hash="asdfasdf"> // General/global application variables
 APP_TITLE="${Cb}λ${Cn} Jumpstart"
 APP_RECIPES=${RECIPES:-YES}
+# </GENERAL>
 
-DEBUG=${DEBUG:-false}
-
-# Semantic versioning
+# <VERSION> // Semantic versioning.
 APP_VERSION_MAJOR=0
 APP_VERSION_MINOR=1
 APP_VERSION_BUILD=0
 APP_VERSION_REVISION=1
 APP_VERSION_CODENAME=silly
 APP_VERSION_NICKNAME=package
+# </VERSION>
 
 example() {
     # Explains how documentation works
@@ -71,11 +69,14 @@ multi() {
 }
 
 
-
-#
-#       AVOID change above the safety line.
 #
 # -------------------------------------------------- SAFETY LINE ----
+#          AVOID change above the safety line.
+# <CORE>
+APP=${0/[\$\.\/]*\//}
+APP_PATH=$(pwd)                     # Although can be $(dirname "$0")
+DEBUG=${DEBUG:-false}
+ENGINE=${ENGINE:-$(basename "$(which php || which python || which nodejs || which node)")}
 
 show_header() {
     TITLE="${Cb}${APP_TITLE}${Cn} v$(version print)"
@@ -109,6 +110,11 @@ version() {
         fi
 
         $_e "${TEXT}"
+    }
+
+    compare() {
+        #version: Compare between <version1> and <version2>
+        return
     }
 
     check() {
@@ -293,7 +299,7 @@ die()  { yell "$*"; exit 111; }
 try()  { "$@" || die "${Cr}>${Cn} Error: $*"; }
 
 
-SHORT=
+SHORT=${SHORT:-}
 
 declare -a commands
 commands=()
@@ -600,6 +606,169 @@ src() {
     source "$1"
 }
 
+json() {
+    encode() {
+        INPUT="$*"
+        [[ ! -n "${INPUT}" ]] && INPUT="$(cat /dev/stdin)"
+        case "${ENGINE}" in
+            python) python -c 'import sys, json; sys.stdout.write(json.dumps(json.loads(sys.stdin.read()), separators=(",", ":")))' <<< "${INPUT}" ;;
+            php|*) php -r 'echo json_encode(json_decode(stream_get_contents(fopen("php://stdin", "r"))));' <<< "${INPUT}" ;;
+        esac
+    }
+
+    decode() {
+        INPUT="$*"
+        [[ ! -n "${INPUT}" ]] && INPUT="$(cat /dev/stdin)"
+        case "${ENGINE}" in
+            php|*) php -r '$INPUT=stream_get_contents(fopen("php://stdin","r"));$INPUT=($INPUT[0]==="'"'"'"?substr($INPUT,1,-2):$INPUT);function R($S,$P="",$l=""){foreach($S as $n=>$v){if(is_array($v)||is_object($v)){R($v,"{$n}","{$P}");continue;}echo "[".(implode(".",array_filter([$l,$P,$n],function($v){return($v!=="");})))."]={$v}\n";}};R(json_decode($INPUT,true));' <<< "${INPUT}"
+        esac
+    }
+
+    dynamic() {
+        JSON="${4:-${3:-}}"
+        NAME="${2:-${1:-}}"
+        [[ ! -n "${JSON}" ]] && JSON="$(cat /dev/stdin)"
+
+        LINE=
+
+        while read line
+        do  LINE=$((LINE + 1))
+            VARIABLE="$($_e "${line}" | sed -E 's/\[(.*)\]=(.*)/\1/')"
+            CONTENTS="$($_e "${line}" | sed -E 's/\[(.*)\]=(.*)/\2/')"
+            eval "$NAME[${VARIABLE}]=\"${CONTENTS}\""
+
+            $_e "$NAME[${VARIABLE}]=\"${CONTENTS}\""
+        done <<< "${JSON}"
+        export "$NAME"
+        $_e ${NAME[@]}
+    }
+
+    extract() {
+        JSON=${3:-${2:-}}
+        [[  !   -n  "${JSON}" ]] && JSON="$(cat /dev/stdin)"
+        [[  ""  !=  "${JSON}" ]] && \
+        [[ "''" !=  "${JSON}" ]] && \
+        (decode <<< "${JSON}""""""" \
+            | grep "\[${1}\]="""""  \
+            | sed -E 's/.*=(.*)/\1/')
+    }
+
+    checkOptions "$@"
+}
+
+λ() {
+    require md5sum grep sed
+
+    declare -A SECTIONS=()
+    declare -a WARNINGS=()
+
+    read-sections() {
+        [[ "$3" == "/" ]] \
+            && SECTIONS[$2]+="$1" \
+            || SECTIONS[$2]="${3:-__INVALID_HASH__} $1 "
+    }
+
+    calculate-hash() {
+        SECTION=$1
+        HASH=("$2"  "$(cat  "${APP}"    \
+            | head -n$(($4        - 1)) \
+            | tail -n$(($4 -  $3  - 1)) \
+            | md5sum | awk '{print $1}')")
+
+        if [ "${HASH[0]}" != "${HASH[1]}" ]
+        then [[ "$SHORT" == "" ]] \
+                && WARNINGS+=("Incorrect hash for ${Cb}${SECTION}${Cn}.\nThere's ${Cb}${HASH[0]}${Cn}, should have ${Cb}${HASH[1]}${Cn}.\n")\
+                || WARNINGS+=("${SECTION}\t${HASH[0]}\t${HASH[1]}")
+        fi
+    }
+
+    check-for-updates() {
+        require curl awk sed base64
+
+        declare -A ENDPOINTS=(\
+            [TAGs]="https://api.github.com/repos/jmurowaniecki/jumpstart-bash/tags" \
+        )
+
+        declare -A TAGs=()
+        export TAGs
+
+        curl -s ${ENDPOINTS['TAGs']} \
+            | json decode \
+            | json dynamic assert TAGs
+
+
+        $_e "Tag name: ${TAGs['0.name']} -- ${TAGs[@]}"
+        exit
+        # [
+        #   {
+        #     "name": "0.1.0-0",
+        #     "zipball_url": "https://api.github.com/repos/jmurowaniecki/jumpstart-bash/zipball/0.1.0-0",
+        #     "tarball_url": "https://api.github.com/repos/jmurowaniecki/jumpstart-bash/tarball/0.1.0-0",
+        #     "commit": {
+        #       "sha": "466f1d28845826970d6c8e51b6e2a284f73ebe1d",
+        #       "url": "https://api.github.com/repos/jmurowaniecki/jumpstart-bash/commits/466f1d28845826970d6c8e51b6e2a284f73ebe1d"
+        #     },
+        #     "node_id": "MDM6UmVmMTAyMDAxOTc5OjAuMS4wLTA="
+        #   }
+        # ]
+
+        # target=$(tempfile)
+
+        # https://api.github.com/repos/jmurowaniecki/jumpstart-bash/git/trees/466f1d28845826970d6c8e51b6e2a284f73ebe1d
+
+        # {
+        #   "sha": "466f1d28845826970d6c8e51b6e2a284f73ebe1d",
+        #   "url": "https://api.github.com/repos/jmurowaniecki/jumpstart-bash/git/trees/466f1d28845826970d6c8e51b6e2a284f73ebe1d",
+        #   "tree": [
+        #     ...,
+        #     {
+        #       "path": "template.sh",
+        #       "mode": "100755",
+        #       "type": "blob",
+        #       "sha": "3483e086ff93c0e4d140d975fb08833145d6b715",
+        #       "size": 6730,
+        #       "url": "https://api.github.com/repos/jmurowaniecki/jumpstart-bash/git/blobs/3483e086ff93c0e4d140d975fb08833145d6b715"
+        #     }
+        #   ],
+        #   "truncated": false
+        # }
+
+        curl 'https://api.github.com/repos/jmurowaniecki/jumpstart-bash/git/blobs/3483e086ff93c0e4d140d975fb08833145d6b715' | \
+            grep 'content' | \
+            awk -F':' '{print substr($2, 3, length($2) - 4)}' | \
+            sed -E 's/\\n/\n/g' | \
+            base64 -d > "${target}"
+
+        echo "Veja ${target}"
+    }
+
+    case "$1" in
+        update) check-for-updates
+            ;;
+
+        check|*)
+            while read VALUE
+            do read-sections ${VALUE}
+            done <<< "$(cat "${APP}" \
+                | grep -n '# ''<[/A-Z]*.*>' \
+                | sed  -E 's/([0-9]*):# ''<([/]*)([A-Z]*)(.*hash="(.*)")*>.*/\1\t\3\t\2\t\5/')"
+
+            for section in "${!SECTIONS[@]}"
+                do calculate-hash "${section}" ${SECTIONS[${section}]}
+            done
+
+            if [ ${#WARNINGS[@]} -gt 0 ]
+            then for warn in "${WARNINGS[@]}"
+                do $_e "${warn}"
+                done
+                $_e "These alerts may mean that you are using a modified or outdated version."\
+                "\nTry updating by running the command \`${Cb}${0} λ update${Cb}\`."
+            fi
+            ;;
+    esac
+
+}
+
 #
 # ALIAS TO COMMON RESOURCES
     max_size=
@@ -610,3 +779,4 @@ src() {
 #
 # FUNCTION CALLER
 checkOptions "$@"
+# </CORE>
