@@ -9,12 +9,12 @@
 # REPOSITORY  : https://github.com/jmurowaniecki/jumpstart
 # -------------------------------------------------------------------
 #
-# <GENERAL hash="asdfasdf"> // General/global application variables
+# <GENERAL hash="300315eeab1b8dc5bcffbf6ca6640775"> // General/global application variables
 APP_TITLE="${Cb}λ${Cn} Jumpstart"
 APP_RECIPES=${RECIPES:-YES}
 # </GENERAL>
 
-# <VERSION> // Semantic versioning.
+# <VERSION hash="d806c89fd1461f99d6d6534fa7c4dccd"> // Semantic versioning.
 APP_VERSION_MAJOR=0
 APP_VERSION_MINOR=1
 APP_VERSION_BUILD=0
@@ -72,7 +72,7 @@ multi() {
 #
 # -------------------------------------------------- SAFETY LINE ----
 #          AVOID change above the safety line.
-# <CORE>
+# <CORE hash="edd61a7bae893629564c5466ce77b453">
 APP=${0/[\$\.\/]*\//}
 APP_PATH=$(pwd)                     # Although can be $(dirname "$0")
 DEBUG=${DEBUG:-false}
@@ -132,7 +132,7 @@ version() {
         success
     }
 
-    init() {
+    release() {
         #version: Start semantic versioning.
         require versioning
 
@@ -146,7 +146,7 @@ version() {
         OPTIONS=(target major minor build revision codename nickname)
         OPTION=0
 
-        IS_DIRECTORY=
+        # IS_DIRECTORY=
         VERSION_LETTER=v
         OVERIDE_VERSION=
 
@@ -226,16 +226,21 @@ version() {
             export "${SEM}"="${VAL/-/}"
         done
 
-        LAST_TAG=$(git tag --list --sort=tag|head -n 1)
-        $_e "## ${VERSION_LETTER}${TARGET_MAJOR}.${TARGET_MINOR}.${TARGET_BUILD}-${TARGET_REVISION} ${TARGET_CODENAME} ${TARGET_NICKNAME}
+        LAST_TAG=$(git tag --list --sort=tag | head -n 1)
+        LAST_SUM=$(git show "${LAST_TAG}" | grep 'commit ' | awk '{print $2}')
+        FULL_VER="${VERSION_LETTER}${TARGET_MAJOR}.${TARGET_MINOR}.${TARGET_BUILD}-${TARGET_REVISION}"
+
+        $_e "## ${FULL_VER} ${TARGET_CODENAME} ${TARGET_NICKNAME}
 Histórico de correções desde a versão **${LAST_TAG}** até a presente data ($(date +'%Y-%m-%d')):
-$(git log --since="${LAST_TAG}" --oneline --pretty=format:'-   **%h**: %s')
+$(git log --since="${LAST_SUM}" --oneline --pretty=format:'-   **%h**: %s')
 
 " >> HISTORY.md
 
-        $_e "checking for $0 where $* turns to
-        git tag '${VERSION_LETTER}${TARGET_MAJOR}.${TARGET_MINOR}.${TARGET_BUILD}-${TARGET_REVISION}' -m '${TARGET_CODENAME} ${TARGET_NICKNAME}'
-"
+        $_e "checking for $0 where last tag was ${LAST_TAG} turns to:
+        git tag '${FULL_VER}' -m '${TARGET_CODENAME} ${TARGET_NICKNAME}'\n\n"
+
+        git commit HISTORY.md -m "Updating release to ${FULL_VER}"
+        git tag "${FULL_VER}" -m "${TARGET_CODENAME} ${TARGET_NICKNAME}"
     }
 
     checkOptions "$@"
@@ -633,14 +638,11 @@ json() {
 
         while read line
         do  LINE=$((LINE + 1))
-            VARIABLE="$($_e "${line}" | sed -E 's/\[(.*)\]=(.*)/\1/')"
-            CONTENTS="$($_e "${line}" | sed -E 's/\[(.*)\]=(.*)/\2/')"
-            eval "$NAME[${VARIABLE}]=\"${CONTENTS}\""
-
-            $_e "$NAME[${VARIABLE}]=\"${CONTENTS}\""
+            VARIABLE="$($_e "${line}" | sed -E 's/\[(.*)\]=(.*)/["\1"]="\2"/')"
+            eval "${NAME}${VARIABLE}"
         done <<< "${JSON}"
-        export "$NAME"
-        $_e ${NAME[@]}
+        export   "${NAME}"
+        $_e      "${NAME[@]}"
     }
 
     extract() {
@@ -661,6 +663,7 @@ json() {
 
     declare -A SECTIONS=()
     declare -a WARNINGS=()
+    declare -A HASHDATA=()
 
     read-sections() {
         [[ "$3" == "/" ]] \
@@ -670,16 +673,33 @@ json() {
 
     calculate-hash() {
         SECTION=$1
-        HASH=("$2"  "$(cat  "${APP}"    \
+        HASH=("$2"  "$(cat   "${APP}"   \
             | head -n$(($4        - 1)) \
             | tail -n$(($4 -  $3  - 1)) \
             | md5sum | awk '{print $1}')")
 
         if [ "${HASH[0]}" != "${HASH[1]}" ]
-        then [[ "$SHORT" == "" ]] \
+        then HASHDATA["${SECTION}"]="${HASH[1]}"
+            [[ "$SHORT" == "" ]] \
                 && WARNINGS+=("Incorrect hash for ${Cb}${SECTION}${Cn}.\nThere's ${Cb}${HASH[0]}${Cn}, should have ${Cb}${HASH[1]}${Cn}.\n")\
                 || WARNINGS+=("${SECTION}\t${HASH[0]}\t${HASH[1]}")
         fi
+        export HASHDATA
+    }
+
+    extract-headers() {
+        HEAD="${4:-${3:-}}"
+        NAME="${2:-${1:-}}"
+        [[ ! -n "${HEAD}" ]] && HEAD="$(cat /dev/stdin)"
+
+        LINE=
+
+        while read line
+        do  LINE=$((LINE + 1))
+            if $_e "${line}" | grep -q '< .*: .*'
+            then eval "${NAME}$($_e "${line}" | sed -E 's/< (.*): (.*)/["\1"]="\2"/' | sed -E 's/\r//')"
+            fi
+        done <<< "${HEAD}"
     }
 
     check-for-updates() {
@@ -689,16 +709,27 @@ json() {
             [TAGs]="https://api.github.com/repos/jmurowaniecki/jumpstart-bash/tags" \
         )
 
-        declare -A TAGs=()
-        export TAGs
+        declare -A TAGs=() HEADERS=()
+        export TAGS HEADERS
 
-        curl -s ${ENDPOINTS['TAGs']} \
+        curl_headers=$(mktemp)
+        curl_body=$(curl -s "${ENDPOINTS['TAGs']}" -vvv \
+            2> "${curl_headers}")
+
+        $_e    "${curl_body}" \
             | json decode \
             | json dynamic assert TAGs
 
+        extract-headers \
+            to HEADERS \
+            from "$(cat "${curl_headers}")" \
+                &&  rm  "${curl_headers}"
 
-        $_e "Tag name: ${TAGs['0.name']} -- ${TAGs[@]}"
-        exit
+        case "${TAGs[message]}" in
+            'API rate limit exceeded for'*)
+            $_e "You have '${HEADERS[X-RateLimit-Remaining]}/${HEADERS[X-RateLimit-Limit]}' remaining requests. Try authenticate to get higher rate limit."
+        esac
+
         # [
         #   {
         #     "name": "0.1.0-0",
@@ -712,7 +743,7 @@ json() {
         #   }
         # ]
 
-        # target=$(tempfile)
+        target=$(mktemp)
 
         # https://api.github.com/repos/jmurowaniecki/jumpstart-bash/git/trees/466f1d28845826970d6c8e51b6e2a284f73ebe1d
 
@@ -746,15 +777,38 @@ json() {
         update) check-for-updates
             ;;
 
-        check|*)
-            while read VALUE
-            do read-sections ${VALUE}
-            done <<< "$(cat "${APP}" \
-                | grep -n '# ''<[/A-Z]*.*>' \
+        fix)
+            sectors="$(grep -n '# ''<[/A-Z]*.*>' "${APP}" \
                 | sed  -E 's/([0-9]*):# ''<([/]*)([A-Z]*)(.*hash="(.*)")*>.*/\1\t\3\t\2\t\5/')"
+            while read -r VALUE
+            do    read-sections ${VALUE}
+            done  <<< "${sectors}"
 
             for section in "${!SECTIONS[@]}"
                 do calculate-hash "${section}" ${SECTIONS[${section}]}
+            done
+
+            for section in "${!HASHDATA[@]}"
+            do  target="$(mktemp)"
+                cat "${APP}" \
+                    | sed -E 's/\# ''<'"${section}"'*.*>/\# ''<'"${section}"' hash''="'"${HASHDATA[$section]}"'">/' \
+                    > "${target}"
+                cat   "${target}" > "${APP}"
+                rm -f "${target}"
+                λ fix
+                exit
+            done
+            ;;
+
+        check|*)
+            sectors="$(grep -n '# ''<[/A-Z]*.*>' "${APP}" | \
+                sed  -E 's/([0-9]*):# ''<([/]*)([A-Z]*)(.*hash="(.*)")*>.*/\1\t\3\t\2\t\5/')"
+            while read -r VALUE
+            do    read-sections ${VALUE}
+            done <<< "${sectors}"
+
+            for section in "${!SECTIONS[@]}"
+            do calculate-hash "${section}" ${SECTIONS[${section}]}
             done
 
             if [ ${#WARNINGS[@]} -gt 0 ]
