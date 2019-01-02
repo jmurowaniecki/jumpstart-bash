@@ -11,7 +11,7 @@
     ],
     "scripts": {
         "post-create-project-cmd": [
-            "target=$(pwd | sed -E 's/.*\\/(.*)$/\\1/') && mv template.sh \"$target\" && chmod +x \"$target\""
+            "target=$(pwd | sed -E 's/.*\\/(.*)$/\\1/') && mv jumpstart.sh \"$target\" && chmod +x \"$target\""
         ]
     },
     "require": {}

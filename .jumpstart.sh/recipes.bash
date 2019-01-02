@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-function recipes {
+recipes() {
     # Main recipes (root folder)
 
-    function recipe1 {
+    recipe1() {
         #recipes: User defined recipe
         success message "this is an user defined recipe"
 
@@ -12,7 +12,7 @@ function recipes {
         success
     }
 
-    function recipe2 {
+    recipe2() {
         #recipes: User defined recipe2
         success message "this is an user defined recipe"
 

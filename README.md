@@ -1,9 +1,9 @@
-# Jump Start Bash Template
+# <img src="assets/jumpstart.png" style="float:left; margin:-5px 10px 0 0"> Jump Start
 [![StyleCI](https://styleci.io/repos/102001979/shield?branch=master)](https://styleci.io/repos/102001979) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8c024327353741839413296650fe883f)](https://www.codacy.com/app/jmurowaniecki/jumpstart-bash?utm_source=github.com&utm_medium=referral&utm_content=jmurowaniecki/jumpstart-bash&utm_campaign=Badge_Grade)
 
 **Jump Start** was concepted to be an easy and lightweight boilerplate for your tools using modularity to manage readability and producing a self-deployment solution. Although you can use `jumpstart` to handle self-contained tools, it can be used to manage multiple recipes in a _global_ environment.
 
-Aiming to solve structural gaps due to some [classical language limitations](https://mywiki.wooledge.org/BashWeaknesses), allowing to perform autocompletion and generate documentation based on source code annotations, **Jump Start** intent to be your weapon of choice to start from small sized projects to complex solutions.
+Aiming to solve structural gaps due to some [classical language limitations](https://mywiki.wooledge.org/BashWeaknesses), allowing to perform autocompletion and generate documentation based initially on  function declarations source code annotations, **Jump Start** intent to be your weapon of choice to start from small sized projects to complex solutions without leaving your [state of art](https://github.com/jlevy/the-art-of-command-line).
 
 [Bash is a really powerfull tool](https://www.tldp.org/LDP/abs/html/) and there are a lot of [online documentation](http://web.mit.edu/~linux/docs/howto/Adv-Bash-Scr-HOWTO), [good](https://github.com/bahamas10/bash-style-guide) [practices](https://devmanual.gentoo.org/tools-reference/bash/), [style guidance](https://google.github.io/styleguide/shell.xml), advices and tools for [validation, static analysis and linting](https://github.com/koalaman/shellcheck) to ensure code quality and maintainability.
 
@@ -49,7 +49,6 @@ Describes script name, description, usage, authors and how/where to get more inf
 # REPOSITORY  : https://github.com/YOUR_USER/your_project
 #
 ```
-
 
 #### Versioning
 
