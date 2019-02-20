@@ -4,7 +4,7 @@
 # DESCRIPTION : An easy and lightweight boilerplate for your tools.
 # AUTHOR      : John Murowaniecki <john@compilou.com.br>
 # DATE        : 20170825
-# VERSION     : 0.1.0-3 honest mistake
+# VERSION     : 0.1.0-4 gracious mistake
 # USAGE       : bash jumpstart.sh or ./jumpstart.sh or ..
 # REPOSITORY  : https://github.com/jmurowaniecki/jumpstart
 # -------------------------------------------------------------------
@@ -14,13 +14,13 @@ APP_TITLE="${Cb}λ${Cn} Jumpstart"
 APP_RECIPES=${RECIPES:-YES}
 # </GENERAL>
 
-# <VERSION hash="d806c89fd1461f99d6d6534fa7c4dccd"> // Semantic versioning.
+# <VERSION hash="7f58df162ecf09365ea4badb20ce311d"> // Semantic versioning.
 APP_VERSION_MAJOR=0
 APP_VERSION_MINOR=1
 APP_VERSION_BUILD=0
-APP_VERSION_REVISION=2
-APP_VERSION_CODENAME=silly
-APP_VERSION_NICKNAME=package
+APP_VERSION_REVISION=4
+APP_VERSION_CODENAME=honest
+APP_VERSION_NICKNAME=mistake
 # </VERSION>
 
 example() {
@@ -72,7 +72,7 @@ multi() {
 #
 # -------------------------------------------------- SAFETY LINE ----
 #          AVOID change above the safety line.
-# <CORE hash="f46c8ea4d2866873dd97a65d1b52c2de">
+# <CORE hash="a98aa1223bfdf6f23c68e9ed8bd6cec9">
 APP=${0/[\$\.\/]*\//}
 APP_PATH=$(pwd)                     # Although can be $(dirname "$0")
 DEBUG=${DEBUG:-false}
@@ -237,11 +237,27 @@ $(git log --since="${LAST_SUM}" --oneline --pretty=format:'-   **%h**: %s')
 
 " >> HISTORY.md
 
-        $_e "checking for $0 where last tag was ${LAST_TAG} turns to:
-        git tag '${FULL_VER}' -m '${TARGET_CODENAME} ${TARGET_NICKNAME}'\n\n"
+        declare -A UPDATEABLES=(
+            [APP_VERSION_MAJOR]=$TARGET_MAJOR
+            [APP_VERSION_MINOR]=$TARGET_MINOR
+            [APP_VERSION_BUILD]=$TARGET_BUILD
+            [APP_VERSION_REVISION]=$TARGET_REVISION
+            [APP_VERSION_CODENAME]=$TARGET_CODENAME
+            [APP_VERSION_NICKNAME]=$TARGET_NICKNAME
+        )
+        for target in "${!UPDATEABLES[@]}"
+        do  cat ${APP} | sed -E "s/(${target}=)(.*)/\1${UPDATEABLES[$target]}/" > ${APP}~
+            cat ${APP}~ > ${APP}
+        done
+        [ -e ${APP}~ ] && rm ${APP}~
 
-        git commit HISTORY.md -m "Updating release to ${FULL_VER}"
-        git tag "${FULL_VER}" -m "${TARGET_CODENAME} ${TARGET_NICKNAME}"
+        PRINT "checking for \"$0\" where last tag was \"${LAST_TAG}\" turns to:
+        git tag \"${FULL_VER}\" -m \"${TARGET_CODENAME} ${TARGET_NICKNAME}\"\n\n"
+
+        for target in "${APP}" "HISTORY.md"
+        do git commit "${target}" -m "Updating release to ${FULL_VER}"
+        done
+        git tag "${FULL_VER}" -a -m "${TARGET_CODENAME} ${TARGET_NICKNAME}"
     }
 
     checkOptions "$@"
@@ -780,7 +796,16 @@ json() {
             sectors="$(grep -n '# ''<[/A-Z]*.*>' "${APP}" \
                 | sed  -E 's/([0-9]*):# ''<([/]*)([A-Z]*)(.*hash="(.*)")*>.*/\1\t\3\t\2\t\5/')"
             while read -r VALUE
-            do    echo read-sections "${VALUE}"
+            do  declare -a fields=(line name stop hash)
+                line=
+                name=
+                stop=
+                hash=
+                FIELDS=(${VALUE})
+                for var in "${!FIELDS[@]}"
+                do  export "${fields[$var]}"="${FIELDS[$var]}"
+                done
+                read-sections "${line}" "${name}" "${stop}" "${hash}"
             done  <<< "${sectors}"
 
             for section in "${!SECTIONS[@]}"
