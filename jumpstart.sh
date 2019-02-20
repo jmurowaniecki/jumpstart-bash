@@ -4,7 +4,7 @@
 # DESCRIPTION : An easy and lightweight boilerplate for your tools.
 # AUTHOR      : John Murowaniecki <john@compilou.com.br>
 # DATE        : 20170825
-# VERSION     : 0.1.0-1 silly package
+# VERSION     : 0.1.0-3 honest mistake
 # USAGE       : bash jumpstart.sh or ./jumpstart.sh or ..
 # REPOSITORY  : https://github.com/jmurowaniecki/jumpstart
 # -------------------------------------------------------------------
