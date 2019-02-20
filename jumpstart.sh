@@ -18,7 +18,7 @@ APP_RECIPES=${RECIPES:-YES}
 APP_VERSION_MAJOR=0
 APP_VERSION_MINOR=1
 APP_VERSION_BUILD=0
-APP_VERSION_REVISION=1
+APP_VERSION_REVISION=2
 APP_VERSION_CODENAME=silly
 APP_VERSION_NICKNAME=package
 # </VERSION>
@@ -272,11 +272,9 @@ there() {
 
 require() {
     for required in "$@"
-    do  binary='' \
-        method='' \
+    do  binary=$(which "${required}")
         return=true
-
-        binary=$(which "${required}")
+        method=
 
         # Verificar a possibilidade de validação com `command -v` sem perda do
         # propósito da validação do retorno.
