@@ -72,7 +72,7 @@ multi() {
 #
 # -------------------------------------------------- SAFETY LINE ----
 #          AVOID change above the safety line.
-# <CORE hash="edd61a7bae893629564c5466ce77b453">
+# <CORE hash="f46c8ea4d2866873dd97a65d1b52c2de">
 APP=${0/[\$\.\/]*\//}
 APP_PATH=$(pwd)                     # Although can be $(dirname "$0")
 DEBUG=${DEBUG:-false}
@@ -211,6 +211,7 @@ version() {
             done
         fi
 
+        # shellcheck disable=SC2002
         TARGET_MAJOR=$(cat "$APP" | grep -e '# VERSION.*:' | head -n 1)
 
         declare -a \
@@ -621,11 +622,13 @@ json() {
         esac
     }
 
+    # shellcheck disable=SC2120
     decode() {
         INPUT="$*"
         [[ ! -n "${INPUT}" ]] && INPUT="$(cat /dev/stdin)"
         case "${ENGINE}" in
-            php|*) php -r '$INPUT=stream_get_contents(fopen("php://stdin","r"));$INPUT=($INPUT[0]==="'"'"'"?substr($INPUT,1,-2):$INPUT);function R($S,$P="",$l=""){foreach($S as $n=>$v){if(is_array($v)||is_object($v)){R($v,"{$n}","{$P}");continue;}echo "[".(implode(".",array_filter([$l,$P,$n],function($v){return($v!=="");})))."]={$v}\n";}};R(json_decode($INPUT,true));' <<< "${INPUT}"
+            php|*) # shellcheck disable=SC2016
+            php -r '$INPUT=stream_get_contents(fopen("php://stdin","r"));$INPUT=($INPUT[0]==="'"'"'"?substr($INPUT,1,-2):$INPUT);function R($S,$P="",$l=""){foreach($S as $n=>$v){if(is_array($v)||is_object($v)){R($v,"{$n}","{$P}");continue;}echo "[".(implode(".",array_filter([$l,$P,$n],function($v){return($v!=="");})))."]={$v}\n";}};R(json_decode($INPUT,true));' <<< "${INPUT}"
         esac
     }
 
@@ -636,18 +639,18 @@ json() {
 
         LINE=
 
-        while read line
-        do  LINE=$((LINE + 1))
+        while read -r line
+        do  LINE=$((  LINE + 1  ))
             VARIABLE="$($_e "${line}" | sed -E 's/\[(.*)\]=(.*)/["\1"]="\2"/')"
             eval "${NAME}${VARIABLE}"
-        done <<< "${JSON}"
+        done <<< "${JSON}"; # shellcheck disable=SC2163
         export   "${NAME}"
         $_e      "${NAME[@]}"
     }
 
     extract() {
         JSON=${3:-${2:-}}
-        [[  !   -n  "${JSON}" ]] && JSON="$(cat /dev/stdin)"
+        [[  !   -n  "${JSON}" ]] && JSON="$(cat /dev/stdin)"; # shellcheck disable=SC2119
         [[  ""  !=  "${JSON}" ]] && \
         [[ "''" !=  "${JSON}" ]] && \
         (decode <<< "${JSON}""""""" \
@@ -672,30 +675,28 @@ json() {
     }
 
     calculate-hash() {
-        SECTION=$1
-        HASH=("$2"  "$(cat   "${APP}"   \
-            | head -n$(($4        - 1)) \
-            | tail -n$(($4 -  $3  - 1)) \
-            | md5sum | awk '{print $1}')")
-
-        if [ "${HASH[0]}" != "${HASH[1]}" ]
+        SECTION=$1;   # shellcheck disable=SC2002
+        HASH=( "$2"  "$(cat    "${APP}"    \
+            | head  -n$(($4         - 1 )) \
+            | tail  -n$(($4  -  $3  - 1 )) \
+            | md5sum  |  awk '{print $1}')")
+        if  [ "${HASH[0]}" != "${HASH[1]}" ]
         then HASHDATA["${SECTION}"]="${HASH[1]}"
             [[ "$SHORT" == "" ]] \
-                && WARNINGS+=("Incorrect hash for ${Cb}${SECTION}${Cn}.\nThere's ${Cb}${HASH[0]}${Cn}, should have ${Cb}${HASH[1]}${Cn}.\n")\
+                && WARNINGS+=("Incorrect hash for \"${SECTION}\".\nThere's \"${HASH[0]}\", should have \"${HASH[1]}\".\n")\
                 || WARNINGS+=("${SECTION}\t${HASH[0]}\t${HASH[1]}")
         fi
         export HASHDATA
     }
 
     extract-headers() {
+        LINE=
         HEAD="${4:-${3:-}}"
         NAME="${2:-${1:-}}"
         [[ ! -n "${HEAD}" ]] && HEAD="$(cat /dev/stdin)"
 
-        LINE=
-
-        while read line
-        do  LINE=$((LINE + 1))
+        while read -r line
+        do  LINE=$((  LINE + 1  ))
             if $_e "${line}" | grep -q '< .*: .*'
             then eval "${NAME}$($_e "${line}" | sed -E 's/< (.*): (.*)/["\1"]="\2"/' | sed -E 's/\r//')"
             fi
@@ -781,15 +782,24 @@ json() {
             sectors="$(grep -n '# ''<[/A-Z]*.*>' "${APP}" \
                 | sed  -E 's/([0-9]*):# ''<([/]*)([A-Z]*)(.*hash="(.*)")*>.*/\1\t\3\t\2\t\5/')"
             while read -r VALUE
-            do    read-sections ${VALUE}
+            do    echo read-sections "${VALUE}"
             done  <<< "${sectors}"
 
             for section in "${!SECTIONS[@]}"
-                do calculate-hash "${section}" ${SECTIONS[${section}]}
+            do  declare -a fields=(hash head tail)
+                hash=
+                head=
+                tail=
+                FIELDS=(${SECTIONS[${section}]})
+                for var in "${!FIELDS[@]}"
+                do  export "${fields[$var]}"="${FIELDS[$var]}"
+                done
+                calculate-hash "${section}" "${hash}" "${head}" "${tail}"
             done
 
             for section in "${!HASHDATA[@]}"
             do  target="$(mktemp)"
+                # shellcheck disable=SC2002
                 cat "${APP}" \
                     | sed -E 's/\# ''<'"${section}"'*.*>/\# ''<'"${section}"' hash''="'"${HASHDATA[$section]}"'">/' \
                     > "${target}"
@@ -804,23 +814,51 @@ json() {
             sectors="$(grep -n '# ''<[/A-Z]*.*>' "${APP}" | \
                 sed  -E 's/([0-9]*):# ''<([/]*)([A-Z]*)(.*hash="(.*)")*>.*/\1\t\3\t\2\t\5/')"
             while read -r VALUE
-            do    read-sections ${VALUE}
+            do  declare -a fields=(line name stop hash)
+                line=
+                name=
+                stop=
+                hash=
+                FIELDS=(${VALUE})
+                for var in "${!FIELDS[@]}"
+                do  export "${fields[$var]}"="${FIELDS[$var]}"
+                done
+                read-sections "${line}" "${name}" "${stop}" "${hash}"
             done <<< "${sectors}"
 
             for section in "${!SECTIONS[@]}"
-            do calculate-hash "${section}" ${SECTIONS[${section}]}
+            do  declare -a fields=(hash head tail)
+                hash=
+                head=
+                tail=
+                FIELDS=(${SECTIONS[${section}]})
+                for var in "${!FIELDS[@]}"
+                do  export "${fields[$var]}"="${FIELDS[$var]}"
+                done
+                calculate-hash "${section}" "${hash}" "${head}" "${tail}"
             done
 
             if [ ${#WARNINGS[@]} -gt 0 ]
             then for warn in "${WARNINGS[@]}"
-                do $_e "${warn}"
-                done
-                $_e "These alerts may mean that you are using a modified or outdated version."\
-                "\nTry updating by running the command \`${Cb}${0} λ update${Cb}\`."
+                do    PRINT  "${warn}"
+                done; PRINT "These alerts may mean that you are using a modified or outdated version."\
+                "\nTry to keep updated executing \`${0} λ update\`."
             fi
             ;;
     esac
 
+}
+
+PRINT() {
+    content="$*" # @TODO: RTS
+    content=$(echo "${content}" | sed -E "s/([.|]*\`)(.*)(\`)/\\${Cb}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*\[)(.*)(\])/\\${Cd}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*\()(.*)(\))/\\${Cd}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*\{)(.*)(\})/\\${Cd}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*\")(\w*\S*)(\"[|.]*)/\\${Ci}\\${Cb}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*<)(\w*\S*)(>)/\\${Cd}\1\\${Ci}\2\3\\${Cn}/g")
+
+    $_e "${content}"
 }
 
 #

@@ -1,4 +1,4 @@
-# <img src="assets/jumpstart.png" style="float:left; margin:-5px 10px 0 0"> Jump Start
+# <img src="assets/jumpstart.png"> Jump Start
 [![StyleCI](https://styleci.io/repos/102001979/shield?branch=master)](https://styleci.io/repos/102001979) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8c024327353741839413296650fe883f)](https://www.codacy.com/app/jmurowaniecki/jumpstart-bash?utm_source=github.com&utm_medium=referral&utm_content=jmurowaniecki/jumpstart-bash&utm_campaign=Badge_Grade)
 
 **Jump Start** was concepted to be an easy and lightweight boilerplate for your tools using modularity to manage readability and producing a self-deployment solution. Although you can use `jumpstart` to handle self-contained tools, it can be used to manage multiple recipes in a _global_ environment.
