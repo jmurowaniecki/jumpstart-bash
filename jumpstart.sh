@@ -4,7 +4,7 @@
 # DESCRIPTION : An easy and lightweight boilerplate for your tools.
 # AUTHOR      : John Murowaniecki <john@compilou.com.br>
 # DATE        : 20170825
-# VERSION     : 0.1.0-4 gracious mistake
+# VERSION     : 0.1.0-5 gracious mistake
 # USAGE       : bash jumpstart.sh or ./jumpstart.sh or …
 # REPOSITORY  : https://github.com/jmurowaniecki/jumpstart
 # -------------------------------------------------------------------
@@ -18,7 +18,7 @@ APP_RECIPES=${RECIPES:-YES}
 APP_VERSION_MAJOR=0
 APP_VERSION_MINOR=1
 APP_VERSION_BUILD=0
-APP_VERSION_REVISION=4
+APP_VERSION_REVISION=5
 APP_VERSION_CODENAME=gracious
 APP_VERSION_NICKNAME=mistake
 # </VERSION>
