@@ -5,7 +5,7 @@
 # AUTHOR      : John Murowaniecki <john@compilou.com.br>
 # DATE        : 20170825
 # VERSION     : 0.1.0-4 gracious mistake
-# USAGE       : bash jumpstart.sh or ./jumpstart.sh or ..
+# USAGE       : bash jumpstart.sh or ./jumpstart.sh or …
 # REPOSITORY  : https://github.com/jmurowaniecki/jumpstart
 # -------------------------------------------------------------------
 #
@@ -88,6 +88,19 @@ show_header() {
 version() {
     # Semantic versioning tool.
 
+    declare -a OPTIONS
+    OPTIONS=(target major minor build revision codename nickname)
+    OPTION=0
+
+    VERSION_LETTER=v
+    OVERIDE_VERSION=
+
+    TARGET_PROJECT='./'      # targeted project folder or script
+    TARGET_VERSION='VERSION' # targeted VERSION file
+
+    GENERATE_TAG=YES
+    GENERATE_RELEASE=YES
+
     print() {
         #version: Prints semantic version.
 
@@ -104,11 +117,11 @@ version() {
         [ ! -z "${APP_VERSION_REVISION}" ] && TEXT+="-${APP_VERSION_REVISION}"
         [ ! -z "${APP_VERSION_NICKNAME}" ] && NICK+=" ${APP_VERSION_NICKNAME}"
 
+        #print-option: --no-nick  Shows only semantic versioning.
         if ! there '--no-nick' in "$@" && \
             [[ ! -z "${NICK}" ]]; then
             TEXT+=" '${NICK}'"
         fi
-
         $_e "${TEXT}"
     }
 
@@ -124,48 +137,35 @@ version() {
         VERSION=$(version print --no-nick)
         GIT_TAG=$(git tag -l)
 
-        success message "Não existe nenhuma TAG para a versão ${Cb}${VERSION}${Cn}."
+        success message "Não existe nenhuma TAG para a versão \"${VERSION}\"."
 
         there "${VERSION}" in "${GIT_TAG}" && \
-            fail "A versão ${Cb}${VERSION}${Cn} já possui tag versionada."
+            fail "A versão \"${VERSION}\" já possui tag versionada."
 
         success
     }
 
     release() {
-        #version: Start semantic versioning.
+        #version: Start/refresh semantic versioning.
         require versioning
-
-        # check if there are some versioning data;
-        # check if there aren't inconsistency;
-        # check git history and propose versioning (check for existent tags);
-
-        # check for release file
-
-        declare -a OPTIONS
-        OPTIONS=(target major minor build revision codename nickname)
-        OPTION=0
-
-        # IS_DIRECTORY=
-        VERSION_LETTER=v
-        OVERIDE_VERSION=
-
-        TARGET_PROJECT='./'      # targeted project folder or script
-        TARGET_VERSION='VERSION' # targeted VERSION file
-
-        GENERATE_TAG=YES
-        GENERATE_RELEASE=YES
 
         if [[ $# -gt 0 ]]
         then    for     option   in "$@"
             do  case "${option}" in
-                    --version-file=*   ) TARGET_VERSION="${option/--version-file=/}" ;;
-                    --no-v|--no-letter*) VERSION_LETTER=        ;;
-                    --no-tag           ) GENERATE_TAG=false     ;;
-                    --no-release       ) GENERATE_RELEASE=false ;;
-                    *)
-                    NEED=true
 
+                    #release-option: --version-file= Filename with SemVer contents.
+                    --version-file=*   ) TARGET_VERSION="${option/--version-file=/}" ;;
+
+                    #release-option: --no-v,--no-letter Version using only numerals.
+                    --no-v|--no-letter*) VERSION_LETTER=        ;;
+
+                    #release-option: --no-tag Finish without generate a new tag.
+                    --no-tag           ) GENERATE_TAG=false     ;;
+
+                    #release-option: --no-release Finish without generate and publish a release.
+                    --no-release       ) GENERATE_RELEASE=false ;;
+
+                    *)     NEED=true
                     while $NEED
                     do  ARG=${OPTIONS[$OPTION]}
                         OPTION=$((OPTION + 1))
@@ -209,6 +209,12 @@ version() {
                 esac
                 $_e "$option ${ARG}"
             done
+
+            export TARGET_VERSION
+            export VERSION_LETTER
+            export GENERATE_TAG
+            export GENERATE_RELEASE
+            export OVERIDE_VERSION
         fi
 
         # shellcheck disable=SC2002
@@ -246,18 +252,31 @@ $(git log --since="${LAST_SUM}" --oneline --pretty=format:'-   **%h**: %s')
             [APP_VERSION_NICKNAME]=$TARGET_NICKNAME
         )
         for target in "${!UPDATEABLES[@]}"
-        do  cat ${APP} | sed -E "s/(${target}=)(.*)/\1${UPDATEABLES[$target]}/" > ${APP}~
-            cat ${APP}~ > ${APP}
+        do  # shellcheck disable=SC2002
+            cat "${APP}" | sed -E "s/(${target}=)(.*)/\1${UPDATEABLES[$target]}/" > "${APP}~"
+            cat "${APP}~" > "${APP}"
         done
-        [ -e ${APP}~ ] && rm ${APP}~
+        [ -e "${APP}~" ] && rm "${APP}~"
 
-        PRINT "checking for \"$0\" where last tag was \"${LAST_TAG}\" turns to:
-        git tag \"${FULL_VER}\" -m \"${TARGET_CODENAME} ${TARGET_NICKNAME}\"\n\n"
+        PRINT "Checking for >$0< where last tag was \"${LAST_TAG}\" turns to:
+        git tag \"${FULL_VER}\" -m \"${TARGET_CODENAME} ${TARGET_NICKNAME}\"
+        "
 
+        if [[ $GENERATE_TAG ]]
+        then fail "Exit without generate tags from release."
+        fi
+
+        #version: Finish versioning closing the last release.
         for target in "${APP}" "HISTORY.md"
         do git commit "${target}" -m "Updating release to ${FULL_VER}"
         done
         git tag "${FULL_VER}" -a -m "${TARGET_CODENAME} ${TARGET_NICKNAME}"
+
+        if [[ $GENERATE_RELEASE ]]
+        then fail "Exit without publish releases."
+        fi
+
+        git push --tags
     }
 
     checkOptions "$@"
@@ -281,6 +300,7 @@ there() {
     do export $argument="$1"; shift
     done
 
+    # shellcheck disable=SC2076
     [[ "${COLLECTION}" =~ "${SOMETHING}" ]] && return 0
 
     return 1
@@ -328,12 +348,20 @@ help() {
     # Show this content.
     success message "${EMPTY}"
     filter='\ '
+    command="$1"
 
-    [[ "$1"     != "" ]] && filter="$1: "
-    [[ "$SHORT" == "" ]] && show_header && $_e "Usage: ${Cb}$0${Cn} $1 [${Cb}help${Cn}|..] ..
+    if [[ "${command}"  == "" ]] \
+    && [[ "${__}" == "${___}" ]]
+    then     command="${___}"
+        ___=
+        __=
+    fi
 
-Parameters:
-"
+    suggestion=$(echo "${___} ${command}" | $_sed 's/\s(.*\s)/\1/')
+
+    [[ "${___}"   == "" ]] && assume_help="[help … ]"
+    [[ "$command" != "" ]] && filter="${command}"
+    [[ "$SHORT"   == "" ]] && show_header && PRINT "Usage: $0 >${suggestion}< ${assume_help:-…}\n\n"
     scope=$filter
 
     parse_help() {
@@ -345,10 +373,13 @@ Parameters:
         list=$(grep '[funct''ion|]*(.*)\(''\) {' -A1 < "${content:-/dev/null}" | \
             awk -F-- '{print($1)}'  | \
             $_sed 's/(.*)\(\) \{$/\1/' | \
-            $_sed "s/.+#${filter}(.*)$/@ok\1/g" | \
+            $_sed "s/.+#${filter}: (.*)$/@ok\1/g" | \
             grep '@ok' -B1 | \
             $_sed 's/\@ok//' | \
             $_sed "s/^${scope}//" | tr '\n' '\ ' | $_sed 's/-- /\\n/g')
+
+        args=$(grep "#${filter}-option:.*" < "${content:-/dev/null}" | \
+            $_sed "s/.*#${filter}-option: (.*) (.*)$/\1 \2/g")
 
         OIFS="$IFS"
         IFS=$'\n' temporary=(${list//\\n/$'\n'})
@@ -356,6 +387,19 @@ Parameters:
 
         for command in "${temporary[@]}"
         do  commands[  "${#commands[@]}"  ]="$command"
+        done
+
+        IFS=$'\n' temporary=(${args//\\n/$'\n'})
+        IFS="$OIFS"
+
+        for command in "${temporary[@]}"
+        do  description="$($_e "${command}" | $_sed 's/([-.,a-z0-9=]*)\ (.*)/\2/')"
+            everyoption=($($_e "${command}" | awk '{print($1)}' | tr ',' ' '))
+            for opt in "${everyoption[@]}"
+            do  commands["${#commands[@]}"]="${opt} ${description}"
+                description=
+            done
+            commands["${#commands[@]}"]="${commands[${#commands[@]}]}\r"
         done
     }
 
@@ -367,12 +411,11 @@ Parameters:
     parseThis() {
         [[ "$1" == "" ]] && return
         method="$1";shift
-        $_e "${space}${Cb}${method}${Cn}$(fill "$method")${space}${*}"
+        PRINT "${space}${Cb}${method}${Cn}$(fill "$method")${space}${*}"
     }
 
     parse_help
 
-    #declare -a processed
     processed=
 
     if  [[ "NO"  != "${APP_RECIPES}" ]] && \
@@ -459,9 +502,9 @@ confirmYesNo() {
 #  when  success.
 success() {
     if [ "$1"  == "message" ]
-    then   success_message="$2"; return 0; fi
-    $_e "${success_message}"
-    $_e && success_message=
+    then     success_message="$2"; return 0; fi
+    PRINT "${success_message}"
+    PRINT && success_message=
 }
 
 #
@@ -477,7 +520,7 @@ success() {
 #  will execute command1, command2, command3 and print: "command 3 fail"
 #  when command 3 fails.
 fail() {
-    $_e "$@" && exit 1
+    PRINT "$@" && exit 1
 }
 
 strlen() {
@@ -538,7 +581,7 @@ config() {
             sed -e "s/_Template/${clean}/"  > "$target"
 
         for each in ${APP}
-        do [[ $UID -eq 0 ]] && $_e "Configuring autocomplete.." && \
+        do [[ $UID -eq 0 ]] && $_e "Configuring autocomplete…" && \
             $_e "complete -F _autocomplete_Template %APP%" | \
                 sed -e "s/%APP%/${each}/" | \
                 sed -e "s/_Template/${clean}/" >> "$target" && \
@@ -557,7 +600,8 @@ checkOptions() {
     then help "$__$*"
     else [ "$(functionExists "$1")" != "YES" ] \
             && help \
-            && fail "Warning: ${Cb}$1${Cn} is an invalid command."
+            && fail "Warning: \"$1\" is an invalid command."
+        [[ "${__}" != "" ]] && ___="${__}"
         [[ "${__}" == "" ]] && __="$1"
         "$@"
     fi
@@ -584,6 +628,8 @@ if [ $? = 0 ] && [ "${COLORS}" -gt 2 ]; then
     Cy="$C[33m" # yellow
     # shellcheck disable=SC2034
     Cc="$C[34m" # blue
+
+    cOption="$C[0;2;3m"
 fi
 
 FSO=()
@@ -689,7 +735,8 @@ json() {
     }
 
     calculate-hash() {
-        SECTION=$1;   # shellcheck disable=SC2002
+        SECTION=$1
+        # shellcheck disable=SC2002
         HASH=( "$2"  "$(cat    "${APP}"    \
             | head  -n$(($4         - 1 )) \
             | tail  -n$(($4  -  $3  - 1 )) \
@@ -778,6 +825,8 @@ json() {
         #   ],
         #   "truncated": false
         # }
+        curl 'https://api.github.com/repos/jmurowaniecki/jumpstart-bash/git/blobs/3483e086ff93c0e4d140d975fb08833145d6b715' | \
+            grep 'content' | \
 
         curl 'https://api.github.com/repos/jmurowaniecki/jumpstart-bash/git/blobs/3483e086ff93c0e4d140d975fb08833145d6b715' | \
             grep 'content' | \
@@ -873,13 +922,15 @@ json() {
 }
 
 PRINT() {
+
     content="$*" # @TODO: RTS
-    content=$(echo "${content}" | sed -E "s/([.|]*\`)(.*)(\`)/\\${Cb}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*\[)(.*)(\])/\\${Cd}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*\()(.*)(\))/\\${Cd}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*\{)(.*)(\})/\\${Cd}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*\")(\w*\S*)(\"[|.]*)/\\${Ci}\\${Cb}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*\`)(.*)(\`)/\\${Cn}\\${Cb}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*\[)(.*)(\])/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*\()(.*)(\))/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*\{)(.*)(\})/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*\")(\w*\S*)(\"[|.]*)/\\${Cn}\\${Cb}\1\2\3\\${Cn}/g")
     content=$(echo "${content}" | sed -E "s/([.|]*<)(\w*\S*)(>)/\\${Cd}\1\\${Ci}\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*>)(.*)(<[|.]*)/\\${Cn}\\${Cb}\2\\${Cn}/g")
 
     $_e "${content}"
 }
@@ -890,6 +941,7 @@ PRINT() {
     _sed='sed -E'
     _e='echo -e'
     __=
+    ___=
 
 #
 # FUNCTION CALLER
