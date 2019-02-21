@@ -262,7 +262,7 @@ $(git log --since="${LAST_SUM}" --oneline --pretty=format:'-   **%h**: %s')
         git tag \"${FULL_VER}\" -m \"${TARGET_CODENAME} ${TARGET_NICKNAME}\"
         "
 
-        if [[ $GENERATE_TAG ]]
+        if [[ ! $GENERATE_TAG ]]
         then fail "Exit without generate tags from release."
         fi
 
@@ -272,7 +272,7 @@ $(git log --since="${LAST_SUM}" --oneline --pretty=format:'-   **%h**: %s')
         done
         git tag "${FULL_VER}" -a -m "${TARGET_CODENAME} ${TARGET_NICKNAME}"
 
-        if [[ $GENERATE_RELEASE ]]
+        if [[ ! $GENERATE_RELEASE ]]
         then fail "Exit without publish releases."
         fi
 
