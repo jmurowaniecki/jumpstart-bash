@@ -929,7 +929,7 @@ PRINT() {
     content=$(echo "${content}" | sed -E "s/([.|]*\()(.*)(\))/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
     content=$(echo "${content}" | sed -E "s/([.|]*\{)(.*)(\})/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
     content=$(echo "${content}" | sed -E "s/([.|]*\")(\w*\S*)(\"[|.]*)/\\${Cn}\\${Cb}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*<)(\w*\S*)(>)/\\${Cd}\1\\${Ci}\2\3\\${Cn}/g")
+    content=$(echo "${content}" | sed -E "s/([.|]*<)(\w*\S*)(>)/\\${Cd}\1\\${Ci}\2\3\\${Cn}/")
     content=$(echo "${content}" | sed -E "s/([.|]*>)(.*)(<[|.]*)/\\${Cn}\\${Cb}\2\\${Cn}/g")
 
     $_e "${content}"
