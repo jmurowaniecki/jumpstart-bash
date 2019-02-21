@@ -378,7 +378,7 @@ help() {
         list=$(grep '[funct''ion|]*(.*)\(''\) {' -A1 < "${content:-/dev/null}" | \
             awk -F-- '{print($1)}'  | \
             $_sed 's/(.*)\(\) \{$/\1/' | \
-            $_sed "s/.+#${filter}: (.*)$/@ok\1/g" | \
+            $_sed "s/.+#${filter}[|: ]*(.*)$/@ok\1/g" | \
             grep '@ok' -B1 | \
             $_sed 's/\@ok//' | \
             $_sed "s/^${scope}//" | tr '\n' '\ ' | $_sed 's/-- /\\n/g')
