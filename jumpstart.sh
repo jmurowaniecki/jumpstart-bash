@@ -126,12 +126,12 @@ version() {
     }
 
     compare() {
-        #version: Compare between <version1> and <version2>
+        #version: Compare between "version1" and "version2"
         return
     }
 
     check() {
-        #version: Check if current version matches last (actual) GIT tag.
+        #version: Check if current version matches last (or "actual") GIT tag.
         require versioning
 
         VERSION=$(version print --no-nick)
@@ -334,8 +334,8 @@ require() {
 # [1] https://www.biostars.org/p/300840/
 # [2] https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs/25515370#25515370
 #
-yell() { $_e "$0: $*" >&2; }
-die()  { yell "$*"; exit 111; }
+yell() { PRINT "$0: $*"  >&2 ; }
+die()  { yell  "$*"; exit 111; }
 try()  { "$@" || die "${Cr}>${Cn} Error: $*"; }
 
 
@@ -356,12 +356,17 @@ help() {
         ___=
         __=
     fi
-
-    suggestion=$(echo "${___} ${command}" | $_sed 's/\s(.*\s)/\1/')
+    suggestion=
+    declare -a suggestions=(${___} ${command})
+    for areest in "${suggestions[@]}"
+    do suggestion="${suggestion}${u}${areest}"
+        u=' '
+    done
 
     [[ "${___}"   == "" ]] && assume_help="[help … ]"
     [[ "$command" != "" ]] && filter="${command}"
     [[ "$SHORT"   == "" ]] && show_header && PRINT "Usage: $0 >${suggestion}< ${assume_help:-…}\n\n"
+
     scope=$filter
 
     parse_help() {
@@ -926,10 +931,10 @@ PRINT() {
     content="$*" # @TODO: RTS
     content=$(echo "${content}" | sed -E "s/([.|]*\`)(.*)(\`)/\\${Cn}\\${Cb}\1\2\3\\${Cn}/g")
     content=$(echo "${content}" | sed -E "s/([.|]*\[)(.*)(\])/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*\()(.*)(\))/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
+    # content=$(echo "${content}" | sed -E "s/([.|]*\()(.*)(\))/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
     content=$(echo "${content}" | sed -E "s/([.|]*\{)(.*)(\})/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
     content=$(echo "${content}" | sed -E "s/([.|]*\")(\w*\S*)(\"[|.]*)/\\${Cn}\\${Cb}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*<)(\w*\S*)(>)/\\${Cd}\1\\${Ci}\2\3\\${Cn}/")
+    content=$(echo "${content}" | sed -E "s/([.|]*<)(\w*)(>[|.]*)/\\${Cd}\1\\${Ci}\2\3\\${Cn}/")
     content=$(echo "${content}" | sed -E "s/([.|]*>)(.*)(<[|.]*)/\\${Cn}\\${Cb}\2\\${Cn}/g")
 
     $_e "${content}"
