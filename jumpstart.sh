@@ -14,7 +14,7 @@ APP_TITLE="${Cb}λ${Cn} Jumpstart"
 APP_RECIPES=${RECIPES:-YES}
 # </GENERAL>
 
-# <VERSION hash="7f58df162ecf09365ea4badb20ce311d"> // Semantic versioning.
+# <VERSION hash="82346a7376951c27cfe27c279eca9798"> // Semantic versioning.
 APP_VERSION_MAJOR=0
 APP_VERSION_MINOR=1
 APP_VERSION_BUILD=0
@@ -69,20 +69,20 @@ multi() {
 }
 
 
+# <CORE hash="d4aa41a2a8f570eaecb6276186e71f19">
 #
 # -------------------------------------------------- SAFETY LINE ----
 #          AVOID change above the safety line.
-# <CORE hash="a98aa1223bfdf6f23c68e9ed8bd6cec9">
 APP=${0/[\$\.\/]*\//}
 APP_PATH=$(pwd)                     # Although can be $(dirname "$0")
 DEBUG=${DEBUG:-false}
 ENGINE=${ENGINE:-$(basename "$(which php || which python || which nodejs || which node)")}
 
 show_header() {
-    TITLE="${Cb}${APP_TITLE}${Cn} v$(version print)"
-    LABEL=$($_e -E "${TITLE}" | sed 's/\\[\e0-9]*\[[0-9;]*\m//g')
+    TITLE=" ${Cb}${APP_TITLE}${Cn} v$(version print)"
+    LABEL=$($_e -E "${TITLE}" | $_sed 's/\\[\e0-9]*\[[0-9;]*\m//g')
 
-    $_e "\n\n$TITLE\n$(printf "%${#LABEL}s" | tr ' ' '-')\n"
+    $_e "\n\n$TITLE\n$(printf "%${#LABEL}s" | $_sed 's/\s/⋯/g')\n"
 }
 
 version() {
@@ -297,7 +297,7 @@ there() {
     COLLECTION=
 
     for argument in SOMETHING IN COLLECTION
-    do export $argument="$1"; shift
+    do  export  "${argument}"="${1}"; shift
     done
 
     # shellcheck disable=SC2076
@@ -326,6 +326,7 @@ require() {
             fail "${Cb}${required}${Cn} required as a binary or defined function."
     done
 }
+
 
 #
 # A tip for those who want some `try .. catch` we strongly suggest: DON`T,
@@ -378,13 +379,13 @@ help() {
         list=$(grep '[funct''ion|]*(.*)\(''\) {' -A1 < "${content:-/dev/null}" | \
             awk -F-- '{print($1)}'  | \
             $_sed 's/(.*)\(\) \{$/\1/' | \
-            $_sed "s/.+#${filter}[|: ]*(.*)$/@ok\1/g" | \
+            $_sed "s/#${filter}[|:| ]*(.*)$/@ok\1/g" | \
             grep '@ok' -B1 | \
             $_sed 's/\@ok//' | \
             $_sed "s/^${scope}//" | tr '\n' '\ ' | $_sed 's/-- /\\n/g')
 
         args=$(grep "#${filter}-option:.*" < "${content:-/dev/null}" | \
-            $_sed "s/.*#${filter}-option: (.*) (.*)$/\1 \2/g")
+            $_sed "s/.*#${filter}-option: (.*) (.*)/\1 \2/g" 2>/dev/null)
 
         OIFS="$IFS"
         IFS=$'\n' temporary=(${list//\\n/$'\n'})
@@ -545,7 +546,7 @@ functionExists() {
 #
 autocomplete() {
     SHORT=on;Cn= ;Cb= ;Cd= ;Ci= ;Cr= ;Cg= ;Cy= ;Cc=
-    $_e "$(help "$1" | awk '{print($1)}')"
+    $_e "$(help "$*" | awk '{print($1)}')"
 }
 
 config() {
@@ -557,7 +558,7 @@ config() {
 
         Reinicialize o terminal para que as mudanças façam efeito.
 
-        Você pode utilizar o comando \`${Cb}reset${Cn}\` para realizar esse processo."
+        Você pode utilizar o comando \`reset\` para realizar esse processo."
 
         _autocomplete_Template() {
             local curr prev
@@ -582,14 +583,14 @@ config() {
         cp "$APP" "/bin/$APP"
         chmod +x  "/bin/$APP"
         $_e "$(declare -f _autocomplete_Template)\n\n" | \
-            sed -e "s/%APP%/${APP}/" | \
-            sed -e "s/_Template/${clean}/"  > "$target"
+            $_sed "s/%APP%/${APP}/" | \
+            $_sed "s/_Template/${clean}/"  > "$target"
 
         for each in ${APP}
         do [[ $UID -eq 0 ]] && $_e "Configuring autocomplete…" && \
             $_e "complete -F _autocomplete_Template %APP%" | \
-                sed -e "s/%APP%/${each}/" | \
-                sed -e "s/_Template/${clean}/" >> "$target" && \
+                $_sed "s/%APP%/${each}/" | \
+                $_sed "s/_Template/${clean}/" >> "$target" && \
             src "$target" && \
             success
         done
@@ -733,6 +734,9 @@ json() {
     declare -a WARNINGS=()
     declare -A HASHDATA=()
 
+    SOURCE="${APP_PATH}/${APP}"
+    [[ ! -e "${SOURCE}" ]] && SOURCE=$(which "${APP}")
+
     read-sections() {
         [[ "$3" == "/" ]] \
             && SECTIONS[$2]+="$1" \
@@ -742,7 +746,7 @@ json() {
     calculate-hash() {
         SECTION=$1
         # shellcheck disable=SC2002
-        HASH=( "$2"  "$(cat    "${APP}"    \
+        HASH=( "$2"  "$(cat    "${SOURCE}" \
             | head  -n$(($4         - 1 )) \
             | tail  -n$(($4  -  $3  - 1 )) \
             | md5sum  |  awk '{print $1}')")
@@ -764,7 +768,7 @@ json() {
         while read -r line
         do  LINE=$((  LINE + 1  ))
             if $_e "${line}" | grep -q '< .*: .*'
-            then eval "${NAME}$($_e "${line}" | sed -E 's/< (.*): (.*)/["\1"]="\2"/' | sed -E 's/\r//')"
+            then eval "${NAME}$($_e "${line}" | $_sed 's/< (.*): (.*)/["\1"]="\2"/' | $_sed 's/\r//')"
             fi
         done <<< "${HEAD}"
     }
@@ -847,7 +851,7 @@ json() {
             ;;
 
         fix)
-            sectors="$(grep -n '# ''<[/A-Z]*.*>' "${APP}" \
+            sectors="$(grep -n '# ''<[/A-Z]*.*>' "${SOURCE}" \
                 | sed  -E 's/([0-9]*):# ''<([/]*)([A-Z]*)(.*hash="(.*)")*>.*/\1\t\3\t\2\t\5/')"
             while read -r VALUE
             do  declare -a fields=(line name stop hash)
@@ -877,10 +881,10 @@ json() {
             for section in "${!HASHDATA[@]}"
             do  target="$(mktemp)"
                 # shellcheck disable=SC2002
-                cat "${APP}" \
+                cat   "${SOURCE}" \
                     | sed -E 's/\# ''<'"${section}"'*.*>/\# ''<'"${section}"' hash''="'"${HASHDATA[$section]}"'">/' \
                     > "${target}"
-                cat   "${target}" > "${APP}"
+                cat   "${target}"    > "${SOURCE}"
                 rm -f "${target}"
                 λ fix
                 exit
@@ -888,7 +892,7 @@ json() {
             ;;
 
         check|*)
-            sectors="$(grep -n '# ''<[/A-Z]*.*>' "${APP}" | \
+            sectors="$(grep -n '# ''<[/A-Z]*.*>' "${SOURCE}" | \
                 sed  -E 's/([0-9]*):# ''<([/]*)([A-Z]*)(.*hash="(.*)")*>.*/\1\t\3\t\2\t\5/')"
             while read -r VALUE
             do  declare -a fields=(line name stop hash)
@@ -928,15 +932,17 @@ json() {
 
 PRINT() {
 
-    content="$*" # @TODO: RTS
-    content=$(echo "${content}" | sed -E "s/([.|]*\`)(.*)(\`)/\\${Cn}\\${Cb}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*\[)(.*)(\])/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
-    # content=$(echo "${content}" | sed -E "s/([.|]*\()(.*)(\))/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*\{)(.*)(\})/\\${Cn}\\${Cd}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*\")(\w*\S*)(\"[|.]*)/\\${Cn}\\${Cb}\1\2\3\\${Cn}/g")
-    content=$(echo "${content}" | sed -E "s/([.|]*<)(\w*)(>[|.]*)/\\${Cd}\1\\${Ci}\2\3\\${Cn}/")
-    content=$(echo "${content}" | sed -E "s/([.|]*>)(.*)(<[|.]*)/\\${Cn}\\${Cb}\2\\${Cn}/g")
-
+    content="$*"
+    if [ "${SHORT}" == "" ]
+    then # @TODO: RTS
+        content=$(echo "${content}" | $_sed "s/([.|]*\`)(.*)(\`)/\\${Cn}\\${Cb}\1\2\3\\${Cn}/g")
+        content=$(echo "${content}" | $_sed "s/([.|]*\[)(.*)(\])/\\${Cn}\\${cOption}\1\2\3\\${Cn}/g")
+        # content=$(echo "${content}" | $_sed "s/([.|]*\()(.*)(\))/\\${Cn}\\${cOption}\1\2\3\\${Cn}/g")
+        content=$(echo "${content}" | $_sed "s/([.|]*\{)(.*)(\})/\\${Cn}\\${cOption}\1\2\3\\${Cn}/g")
+        content=$(echo "${content}" | $_sed "s/([.|]*\")(\w*\S*)(\"[|.]*)/\\${Cn}\\${Cb}\1\2\3\\${Cn}/g")
+        content=$(echo "${content}" | $_sed "s/([.|]*<)(\w*)(>[|.]*)/\\${cOption}\1\\${Ci}\2\3\\${Cn}/")
+        content=$(echo "${content}" | $_sed "s/([.|]*>)(.*)(<[|.]*)/\\${Cn}\\${Cb}\2\\${Cn}/g")
+    fi
     $_e "${content}"
 }
 
